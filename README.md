@@ -6,4 +6,4 @@ Slowly building Temple of ROM II
 
 ### Changes
 
-Re-created project from Temple of ROM disassembly.
+Created project from Temple of ROM disassembly.
