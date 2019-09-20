@@ -1,2 +1,0 @@
-# templeofrom
-Temple of ROM
