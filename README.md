@@ -1,4 +1,4 @@
-templeii
+Temple of ROM
 ==========
 
 Slowly building Temple of ROM II
