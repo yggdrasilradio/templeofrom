@@ -9,8 +9,6 @@
 ; 1000-1BFF	graphics screen #2
 ; 1C00		explosion sprite queue
 
-JOYIN	equ $a00a
-
 PIA0.DA	equ $ff00
 PIA0.CA	equ $ff01
 PIA0.DB	equ $ff02
@@ -125,6 +123,7 @@ START	orcc #$50			; make sure interrupts are disabled
 	lbra LCD46			; launch main initialization sequence
 ; fetch in various source files
                 include sound.asm                               ; fetch sound handling routines
+                include joystick.asm                            ; fetch joystick handling routines
 ; Render the vertical lines of the map
 drawvert	leau LC34A,pcr		; point to short circuit offset table for vertical lines
 	ldd mazeoffx			; fetch screen display offset for maze
@@ -1680,7 +1679,7 @@ LD072	ldb PIA0.DA		; read keyboard rows/buttons
 	eorb #3			; set nonzero if pressed
 	bne LD072		; brif button pressed - we're waiting until the button is released
 	clr numplayers		; set to no players
-LD07D	jsr [JOYIN]		; read joysticks
+LD07D	jsr GETJOY		; read joysticks
 	lda POTVAL+2		; get X coordinate for first player
 	cmpa #$20		; is it to the left?
 	bgt LD09B		; brif not
@@ -1860,7 +1859,7 @@ LD1BE	lbsr swaprender		; switch screens
 * ADJUST PLAYER POSITION
 * VC1 VC3 VC4 VC5
 LD1FF	;jsr SNDOFF		; turn off sound
-	jsr [JOYIN]		; read joysticks
+	jsr GETJOY		; read joysticks
 	ldb curplayer		; get current player number
 	asrb			; set to 0 for player 2, 2 for player 1
 	lslb
