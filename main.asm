@@ -10,9 +10,6 @@
 ; 1C00		explosion sprite queue
 
 JOYIN	equ $a00a
-SETMUX	equ $a9a2
-SNDOFF	equ $a974
-SNDON	equ $a976
 
 PIA0.DA	equ $ff00
 PIA0.CA	equ $ff01
@@ -126,7 +123,8 @@ plr2creatures	equ $1fa0	; where the creatures really are for player two
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
-
+; fetch in various source files
+                include sound.asm                               ; fetch sound handling routines
 ; Render the vertical lines of the map
 drawvert	leau LC34A,pcr		; point to short circuit offset table for vertical lines
 	ldd mazeoffx			; fetch screen display offset for maze
