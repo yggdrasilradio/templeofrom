@@ -2,7 +2,7 @@
 all:	main
 
 main: main.asm
-	lwasm -l -9 -b -o temple.bin main.asm > listing
+	lwasm -l -9 -b -o temple.bin main.asm > temple.lst
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
 
 laser:
