@@ -41,6 +41,7 @@ GETJOY4         puls a          ; get back bit value
                 dec ,s          ; have we done all retries?
                 bne GETJOY1     ; brif not - try again
 GETJOY5         puls d          ; get back attempt counter and axis number
+	leax -1,x
                 decb            ; done all axes?
                 bpl GETJOY0     ; brif not - do next one
                 rts
