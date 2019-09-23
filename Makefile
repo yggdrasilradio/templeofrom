@@ -24,15 +24,3 @@ backup:
 
 install:
 	rcp temple.bin ricka@rickadams.org:/home/ricka/rickadams.org/downloads/TEMPLE.BIN
-
-upload:
-	cd ~/projects
-	rm -f ~/projects/temple.zip
-	zip -r ~/projects/temple.zip ~/projects/temple
-	rcp ~/projects/temple.zip ricka@rickadams.org:/home/ricka/rickadams.org/downloads/temple.zip
-	rm -f ~/projects/temple.zip
-
-zip:
-	rm -f tor.zip
-	zip tor.zip *
-	rcp tor.zip ricka@rickadams.org:/home/ricka/rickadams.org/downloads/tor.zip
