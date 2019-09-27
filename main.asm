@@ -27,88 +27,89 @@ POTVAL	equ $15a
 SCREEN1	equ $400
 SCREEN2	equ $1000
 
-; These are the variables used by the game. These are scattered around
-; the system direct page.
+*** SEGMENT 1 ***
+
+; These are the variables used by the game.
+
 	setdp 0
-creatureptr	equ $00		; pointer to current creature locations
-portaloff	equ $02		; nonzero means portals are currently disabled
-V03	equ $03
-V05	equ $05
-V07	equ $07
-V09	equ $09
-V0B	equ $0b
-V0D	equ $0d
-V0F	equ $0f
-V11	equ $11
-V13	equ $13
-V15	equ $15
-V18	equ $18
-V19	equ $19
-V1A	equ $1a
-V4F	equ $4f
-V50	equ $50
-V52	equ $52
-V5C	equ $5c
-V5D	equ $5d
-V5F	equ $5f
-V68	equ $68
-V69	equ $69
-V86	equ $86
-V8D	equ $8d
-V8E	equ $8e
-randseed equ $94	; the "random seed"
-VB0	equ $b0
-mazeoffx equ $b1	; horizontal offset in maze of top left of screen
-mazeoffy equ $b3	; vertical offset in maze of top left of screen
-curposx	equ $b5		; current player horizontal screen position
-curposy	equ $b7		; current player vertical screen position
-tcoord	equ $b9
-renderscr equ $ba
-endclear equ $bc	; lowest address (highest location on screen) to clear
-VBD	equ $bd
-color	equ $be
-VBF	equ $bf
-VC1	equ $c1
-VC3	equ $c3
-VC4	equ $c4
-VC5	equ $c5
-VC6	equ $c6
-VC7	equ $c7
-VC8	equ $c8
-VC9	equ $c9
-VCA	equ $ca
-VCB	equ $cb
-VCD	equ $cd
-VCF	equ $cf
-VD0	equ $d0
-VD1	equ $d1
-scorep1	equ $d2			; player one's score
-VD5	equ $d5
-VD6	equ $d6
-VD7	equ $d7			; laser sound value
-VD8	equ $d8
-VD9	equ $d9
-VDA	equ $da
-collision	equ $db		; collision detection flag
-VDC	equ $dc
-VDD	equ $dd
-VDE	equ $de
-VDF	equ $df
-VE0	equ $e0
-numplayers	equ $e1	; number of players in the game
-scrollstep	equ $e2	; step/direction for maze scrolling
-plr1state	equ $e4	; player two game state (6 bytes)
-plr2state	equ $ea	; player one game state (6 bytes)
-scorep2		equ $f0	; player two's score
-scoreptr	equ $f3	; pointer to current player's score
-texttty		equ $f5	; whether the "beeping tty" effect is enabled for text
-objlistptr	equ $f6	; pointer to current player's object list
-curplayer	equ $f8	; current player number (oddly, 2 = player 1, 1 = player 2)
-VF9	equ $f9
-VFA	equ $fa
+creatureptr rmb 2 ; pointer to current creature locations
+portaloff rmb 1 ; nonzero means portals are currently disabled
+V03	rmb 2
+V05	rmb 2
+V07	rmb 2
+V09	rmb 2
+V0B	rmb 2
+V0D	rmb 2
+V0F	rmb 2
+V11	rmb 2
+V13	rmb 2
+V15	rmb 1
+V18	rmb 1
+V19	rmb 1
+V1A	rmb 1
+V4F	rmb 1
+V50	rmb 2
+V52	rmb 2
+V5C	rmb 1
+V5D	rmb 2
+V5F	rmb 2
+V68	rmb 1
+V69	rmb 1
+V8D	rmb 1
+V8E	rmb 1
+randseed rmb 1 ; the "random seed"
+mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
+mazeoffy rmb 2 ; vertical offset in maze of top left of screen
+curposx	rmb 2 ; current player horizontal screen position
+curposy	rmb 2 ; current player vertical screen position
+tcoord	rmb 1
+renderscr rmb 2
+endclear rmb 1 ; lowest address (highest location on screen) to clear
+VBD	rmb 1
+color	rmb 1
+VBF	rmb 2
+VC1	rmb 2
+VC3	rmb 1
+VC4	rmb 1
+VC5	rmb 1
+VC6	rmb 1
+VC7	rmb 1
+VC8	rmb 1
+VC9	rmb 1
+VCA	rmb 1
+VCB	rmb 2
+VCD	rmb 2
+VCF	rmb 1
+VD0	rmb 1
+VD1	rmb 1
+scorep1	rmb 3 ; player one's score
+VD5	rmb 1
+VD6	rmb 1
+VD7	rmb 1 ; laser sound value
+VD8	rmb 1
+VD9	rmb 1
+VDA	rmb 1
+collision rmb 1 ; collision detection flag
+VDC	rmb 1
+VDD	rmb 1
+VDE	rmb 1
+VDF	rmb 1
+VE0	rmb 1
+numplayers	rmb 1 ; number of players in the game
+scrollstep	rmb 2 ; step/direction for maze scrolling
+plr1state	rmb 6 ; player two game state (6 bytes)
+plr2state	rmb 6 ; player one game state (6 bytes)
+scorep2		rmb 3 ; player two's score
+scoreptr	rmb 2 ; pointer to current player's score
+texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
+objlistptr	rmb 2 ; pointer to current player's object list
+curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
+VF9	rmb 1
+VFA	rmb 1
  IFDEF MLASER
-sptr equ $fc ; was fe
+sptr rmb 2
  ENDC
+
 creatures	equ $200	; the master creature list
 plr1objlist	equ $1c20	; player one's list of objects in the maze
 plr1creatures	equ $1db0	; where the creatures really are for player one
@@ -116,14 +117,15 @@ plr2objlist	equ $1e10	; player two's list of objects in the maze
 plr2creatures	equ $1fa0	; where the creatures really are for player two
 
 ; This is the actual ROM code.
-	;org $C000
+
 	org $3000
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
 ; fetch in various source files
-                include sound.asm                               ; fetch sound handling routines
-                include joystick.asm                            ; fetch joystick handling routines
+                include sound.asm       ; fetch sound handling routines
+                include joystick.asm    ; fetch joystick handling routines
+
 ; Render the vertical lines of the map
 drawvert	leau LC34A,pcr		; point to short circuit offset table for vertical lines
 	ldd mazeoffx			; fetch screen display offset for maze
@@ -1368,7 +1370,7 @@ horscr15	fcb 0		; end of horizontal lines table
 
 * Horiz 1 through 189
 
-*** SEGMENT ***
+*** SEGMENT 2 ***
 
 LCD46	lbra LCF50
 
@@ -1543,6 +1545,8 @@ LCF3C	pshs b,a
 LCF4B	andcc #$fb
 LCF4D	puls b,a
 	rts
+
+*** SEGMENT 3 ***
 
 LCF50	nop			; flag for valid warm start routine
 	orcc #$50		; make sure interrupts are disabled
@@ -1983,7 +1987,6 @@ checkcollision lda curposy	; get current vertical position
 	addd renderscr		; add to screen base address
 	exg d,x			; save address to pointer and get back original values
 	andb #3			; get offset into byte for the pixel
-	stb VB0			; save byte offset in pixel
 	lslb			; double the pixel offset
 	leay LD31D,pcr		; point to table of shifted collision detection masks
 	ldd b,y			; get collision detection mask for this pixel offset
