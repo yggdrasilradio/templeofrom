@@ -10,6 +10,9 @@
 ; map data. It could be thought of as a 256x256 maze that is zoomed by a
 ; factor of four when used.
 
+; Horiz 1 through 189
+; Vertical 1 through 239
+
 ; Offsets for rendering vertical lines (can be excluded based on horizontal position)
 LC34A	fdb vertscr0-LC34A
 	fdb vertscr1-LC34A
@@ -469,8 +472,6 @@ vertscr14	fcb 224,28,31
 	fcb 239,167,174
 vertscr15	fcb 0		; mark end of vertical lines table
 
-* Vertical 1 through 239
-
 horscr0	fcb 1,125,145
 	fcb 2,3,16
 	fcb 2,32,45
@@ -885,5 +886,3 @@ horscr12
 horscr13
 horscr14
 horscr15	fcb 0		; mark end of horizontal lines table
-
-* Horiz 1 through 189
