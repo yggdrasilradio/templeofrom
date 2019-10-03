@@ -24,14 +24,12 @@ RSTFLG	equ $71
 RSTVEC	equ $72
 POTVAL	equ $15a
 
-SCREEN1	equ $400
-SCREEN2	equ $1000
-
 *** SEGMENT 1 ***
 
 ; These are the variables used by the game.
 
 	setdp 0
+
 creatureptr rmb 2 ; pointer to current creature locations
 portaloff rmb 1 ; nonzero means portals are currently disabled
 V03	rmb 2
@@ -110,11 +108,16 @@ VFA	rmb 1
 sptr rmb 2
  ENDC
 
-creatures	equ $200	; the master creature list
-plr1objlist	equ $1c20	; player one's list of objects in the maze
-plr1creatures	equ $1db0	; where the creatures really are for player one
-plr2objlist	equ $1e10	; player two's list of objects in the maze
-plr2creatures	equ $1fa0	; where the creatures really are for player two
+creatures	equ $200	; unpacked creature home positions (180 bytes) 9 bytes x 20 = 180 bytes
+				; unused (332 bytes)
+SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
+SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
+				; unused (32 bytes)
+plr1objlist	equ $1c20	; player one's list of objects in the maze (400 bytes)
+plr1creatures	equ $1db0	; where the creatures really are for player one (80 bytes) 20 x 4 bytes = 80 bytes
+				; unused (16 bytes)
+plr2objlist	equ $1e10	; player two's list of objects in the maze (400 bytes)
+plr2creatures	equ $1fa0	; where the creatures really are for player two (86 bytes) 20 x 4 bytes = 80 bytes
 
 ; This is the actual ROM code.
 
@@ -127,9 +130,9 @@ START	orcc #$50			; make sure interrupts are disabled
                 include joystick.asm    ; fetch joystick handling routines
 
 ; Render the vertical lines of the map
-drawvert	leau LC34A,pcr		; point to short circuit offset table for vertical lines
-	ldd mazeoffx			; fetch screen display offset for maze
-	bge LC013			; brif screen X offset is positive
+drawvert leau LC34A,pcr		; point to short circuit offset table for vertical lines
+	ldd mazeoffx		; fetch screen display offset for maze
+	bge LC013		; brif screen X offset is positive
 	ldd #0			; minimize to 0
 LC013	lslb			; shift upper 2 bits of position into A
 	rola
@@ -482,7 +485,7 @@ fontdata	fcb $f0,$5f,$17,$80		; A
 
 	fcb $00,$00,$00,$00		; space
 
- incl mapdata.asm
+ include mapdata.asm
 
 *** SEGMENT 2 ***
 
@@ -698,6 +701,7 @@ LCF50	nop			; flag for valid warm start routine
 	lbsr LD3B9		; clear both screens
 	lbsr clearscores	; reset both players scores
 	clr numplayers		; set to no players
+
 	leax LDD23,pcr		; point to creature data table
 	ldy #creatures		; point to unpacked location for creature data table
 LCF85	ldd ,x			; are we at the end of the table?
@@ -706,6 +710,7 @@ LCF85	ldd ,x			; are we at the end of the table?
 	lda ,x+
 	sta ,y+
 	bra LCF85		; go handle another
+
 LCF92	std ,y			; save end of table flag
 LCF94	lbsr LD531
 	clr V03
@@ -1697,12 +1702,13 @@ LD6E9	rts
 ; 1 byte: object score in bcd, hundreds and thousands digits
 ; 16 bytes: object sprite
 ; any number of two byte coordinate pairs followed by a double NUL
-; jade cross (23 total = 2300 points)
 ;
 ; 00 . black
 ; 01 B blue
 ; 10 R red
 ; 11 W white
+
+; jade cross (23 total = 2300 points)
 objcross	fcb $01
 	fdb %0000000000000000 ; ........
 LD6ED	fdb %0000000000000000 ; ........
@@ -1736,6 +1742,7 @@ LD6ED	fdb %0000000000000000 ; ........
 	fcb $64,$b6
 	fcb $c8,$93
 	fcb $00,$00
+
 ; diamond ring (23 total = 4600 points)
 objring	fcb $02
 	fdb %0000000000000000 ; ........
@@ -1770,6 +1777,7 @@ objring	fcb $02
 	fcb $a6,$86
 	fcb $b4,$ae
 	fcb $00,$00
+
 ; golden cup (19 total = 9500 points)
 objcup	fcb $05
 	fdb %0000000000000000 ; .........
@@ -1800,6 +1808,7 @@ objcup	fcb $05
 	fcb $72,$a2
 	fcb $bb,$85
 	fcb $00,$00
+
 ; crystal ball (10 total = 15000 points)
 objball	fcb $15
 	fdb %0000010101000000
@@ -1821,6 +1830,7 @@ objball	fcb $15
 	fcb $d9,$a4
 	fcb $c6,$b5
 	fcb $00,$00
+
 ; crystal goblet (10 total = 10000 points)
 objgoblet	fcb $10
 	fdb %0001010111010000 ; .BBBWB..
@@ -1842,6 +1852,7 @@ objgoblet	fcb $10
 	fcb $73,$b8
 	fcb $b2,$9f
 	fcb $00,$00
+
 ; silver pitcher (5 total = 15000 points)
 objpitcher	fcb $30
 	fdb %0000000000000000 ; ........
@@ -1858,6 +1869,7 @@ objpitcher	fcb $30
 	fcb $df,$99
 	fcb $e5,$b7
 	fcb $00,$00
+
 ; golden crown (3 total = 15000 points)
 objcrown	fcb $50
 	fdb %0000000000000000 ; ........
@@ -2394,8 +2406,8 @@ LDC28	ldx ,s
 	bgt LDCCA
 	pshs u
 	ldb 8,u
-	leau LDD84,pcr ; spider
-	leau b,u
+	leau LDD84,pcr	; spider
+	leau b,u	; or fireball
 	lda V69
 	eora V8E
 	anda #2
@@ -2455,6 +2467,8 @@ LDCDA	subd #1
 LDCDF	addd #1
 LDCE2	clr VD5
 LDCE4	puls pc,x
+
+* initialize creature home positions
 LDCE6	ldx #creatures		; point to creature table
 LDCE9	ldd ,x			; get first coordinate base
 	beq LDD07		; brif end of table
@@ -2490,13 +2504,13 @@ LDD08	lda #$ff
 	std V8D
 	rts
 
-; Starting creature location table
-; Each entry has four coordinates in two pairs. Each pair has a base
-; coordinate and an adjustment coordinate. To calcuate the adjustment,
-; the base coordinate (first of the pair) is subtracted from the
-; adjustment coordinate. Then the difference is divided by 4 (horizontal)
-; or 2 (vertical) and added back to the base coordinate.
-LDD23	fcb $57,$65,$63,$75,$00
+; Creature location table (97 bytes)
+; X1, X2, Y1, Y2, creature ID (00 = spider, 20 = fireball)
+; (X1, Y1) and (X2, Y2) are the corners of a box
+; The creature's home position is at the center of the box
+; Players entering the box aggro the creature
+LDD23
+	fcb $57,$65,$63,$75,$00
 	fcb $03,$10,$02,$10,$20
 	fcb $20,$2d,$02,$10,$20
 	fcb $28,$32,$18,$32,$00
@@ -2846,7 +2860,7 @@ LDFE6	ldb ,u			; get current VDG mode
 	puls pc,u,b,a		; restore registers and return
 
  IFDEF MLASER
-	incl laser.asm
+	include laser.asm
  ENDC
 
 	end START
