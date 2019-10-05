@@ -86,7 +86,7 @@ VD6	rmb 1
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1
 VD9	rmb 1
-VDA	rmb 1
+VDA	rmb 1	; object count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1
 VDD	rmb 1
@@ -116,8 +116,10 @@ sptr rmb 2
 *	Y1	2 bytes
 *	Y2	2 bytes
 *	ID	1 byte (00 = spider, 20 = fireball)
+*
+*	list ends with $0000
 
-creatures	equ $200	; unpacked creature home positions (9 bytes x 19 creatures = 171 bytes)
+creatures	equ $200	; unpacked creature home positions (9 bytes x 19 creatures + 2 bytes = 173 bytes)
 				; unused
 
 * SCREEN 1
@@ -142,7 +144,7 @@ SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of object sprite)
 
-plr1objlist	equ $1c20	; player one objects in the maze (93 x 2 bytes location, 2 bytes sprite ptr = 372 bytes)
+plr1objlist	equ $1c20	; player one objects in the maze (93 x 4 bytes = 372 bytes)
 				; unused
 
 * PLAYER 1 CREATURE LIST
@@ -161,7 +163,7 @@ plr1creatures	equ $1db0	; where the creatures really are for player one (19 crea
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of object sprite)
 
-plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 2 bytes location, 2 bytes sprite ptr = 372 bytes)
+plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 4 bytes = 372 bytes)
 				; unused
 
 * PLAYER 2 CREATURE LIST
@@ -172,9 +174,8 @@ plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 2 bytes loc
 
 plr2creatures	equ $1fa0	; where the creatures really are for player two (19 creatures x 4 bytes = 76 bytes)
 
-; This is the actual ROM code.
+	org $3000	; can be $2000?
 
-	org $3000
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
@@ -942,7 +943,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clr V18
 	clr V19
 	clr VD1
-	ldu #plr1creatures	; pont to player one's creature locations
+	ldu #plr1creatures	; point to player one's creature locations
 	stu creatureptr		; save as creature location pointer
 	ldu #scorep1		; point to player one's score
 	stu scoreptr		; set as current score pointer
@@ -2564,7 +2565,7 @@ LDD08	lda #$ff
 ; (X1, Y1) and (X2, Y2) are the corners of a box
 ; The creature's home position is at the center of the box
 ; Players entering the box aggro the creature
-; Coordinates are a 16 bit quantity divided by 4 and stored in 8 bits
+; Coordinates are 16 bits divided by 4 and stored in 8 bits
 LDD23
 	fcb $57,$65,$63,$75,$00
 	fcb $03,$10,$02,$10,$20
