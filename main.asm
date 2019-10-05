@@ -108,16 +108,69 @@ VFA	rmb 1
 sptr rmb 2
  ENDC
 
-creatures	equ $200	; unpacked creature home positions (180 bytes) 9 bytes x 20 = 180 bytes
-				; unused (332 bytes)
+* MASTER CREATURE LIST
+*
+* Each list entry is 9 bytes:
+*	X1	2 bytes
+*	X2	2 bytes
+*	Y1	2 bytes
+*	Y2	2 bytes
+*	ID	1 byte (00 = spider, 20 = fireball)
+
+creatures	equ $200	; unpacked creature home positions (9 bytes x 19 creatures = 171 bytes)
+				; unused
+
+* SCREEN 1
+*
+*	128 x 96, 4 color
+*
+
 SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
+
+* SCREEN 2
+*
+*	128 x 96, 4 color
+*
+
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
-				; unused (32 bytes)
-plr1objlist	equ $1c20	; player one's list of objects in the maze (400 bytes)
-plr1creatures	equ $1db0	; where the creatures really are for player one (80 bytes) 20 x 4 bytes = 80 bytes
-				; unused (16 bytes)
-plr2objlist	equ $1e10	; player two's list of objects in the maze (400 bytes)
-plr2creatures	equ $1fa0	; where the creatures really are for player two (86 bytes) 20 x 4 bytes = 80 bytes
+				; unused
+
+* PLAYER 1 OBJECT LIST
+*
+* Each list item is 4 bytes:
+*	X	1 byte (X coordinate divided by 4)
+*	Y	1 byte (Y coordinate divided by 4)
+*	sprite	2 bytes (address of object sprite)
+
+plr1objlist	equ $1c20	; player one objects in the maze (93 x 2 bytes location, 2 bytes sprite ptr = 372 bytes)
+				; unused
+
+* PLAYER 1 CREATURE LIST
+*
+* Each list entry is 4 bytes:
+*	X	2 bytes
+*	Y	2 bytes
+
+plr1creatures	equ $1db0	; where the creatures really are for player one (19 creatures x 4 bytes = 76 bytes)
+				; unused
+
+* PLAYER 1 OBJECT LIST
+*
+* Each list item is 4 bytes:
+*	X	1 byte (X coordinate divided by 4)
+*	Y	1 byte (Y coordinate divided by 4)
+*	sprite	2 bytes (address of object sprite)
+
+plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 2 bytes location, 2 bytes sprite ptr = 372 bytes)
+				; unused
+
+* PLAYER 2 CREATURE LIST
+*
+* Each list entry is 4 bytes:
+*	X	2 bytes
+*	Y	2 bytes
+
+plr2creatures	equ $1fa0	; where the creatures really are for player two (19 creatures x 4 bytes = 76 bytes)
 
 ; This is the actual ROM code.
 
@@ -1708,6 +1761,8 @@ LD6E9	rts
 ; 10 R red
 ; 11 W white
 
+; 93 objects total
+
 ; jade cross (23 total = 2300 points)
 objcross	fcb $01
 	fdb %0000000000000000 ; ........
@@ -2504,11 +2559,12 @@ LDD08	lda #$ff
 	std V8D
 	rts
 
-; Creature location table (97 bytes)
+; Creature location table (19 x 5 + 2 = 97 bytes)
 ; X1, X2, Y1, Y2, creature ID (00 = spider, 20 = fireball)
 ; (X1, Y1) and (X2, Y2) are the corners of a box
 ; The creature's home position is at the center of the box
 ; Players entering the box aggro the creature
+; Coordinates are a 16 bit quantity divided by 4 and stored in 8 bits
 LDD23
 	fcb $57,$65,$63,$75,$00
 	fcb $03,$10,$02,$10,$20

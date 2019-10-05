@@ -10,8 +10,12 @@
 ; map data. It could be thought of as a 256x256 maze that is zoomed by a
 ; factor of four when used.
 
-; Horiz 1 through 189
-; Vertical 1 through 239
+; Vert 1 through 189 (coordinates 1 through 756)
+; Horiz 1 through 239 (coordinates 1 through 956)
+;
+; Clipped to viewport of 128 x 96
+;
+; Max area is 1020 x 1020
 
 ; Offsets for rendering vertical lines (can be excluded based on horizontal position)
 LC34A	fdb vertscr0-LC34A
