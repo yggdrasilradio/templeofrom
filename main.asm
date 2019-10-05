@@ -120,7 +120,7 @@ sptr rmb 2
 *	list ends with $0000
 
 creatures	equ $200	; unpacked creature home positions (9 bytes x 19 creatures + 2 bytes = 173 bytes)
-				; unused
+				; 339 bytes unused
 
 * SCREEN 1
 *
@@ -135,7 +135,7 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 *
 
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
-				; unused
+				; 32 bytes unused
 
 * PLAYER 1 OBJECT LIST
 *
@@ -145,7 +145,7 @@ SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
 *	sprite	2 bytes (address of object sprite)
 
 plr1objlist	equ $1c20	; player one objects in the maze (93 x 4 bytes = 372 bytes)
-				; unused
+				; 28 bytes unused (room for 7 more objects)
 
 * PLAYER 1 CREATURE LIST
 *
@@ -154,7 +154,7 @@ plr1objlist	equ $1c20	; player one objects in the maze (93 x 4 bytes = 372 bytes
 *	Y	2 bytes
 
 plr1creatures	equ $1db0	; where the creatures really are for player one (19 creatures x 4 bytes = 76 bytes)
-				; unused
+				; 20 bytes unused (room for 5 more creatures)
 
 * PLAYER 1 OBJECT LIST
 *
@@ -164,7 +164,7 @@ plr1creatures	equ $1db0	; where the creatures really are for player one (19 crea
 *	sprite	2 bytes (address of object sprite)
 
 plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 4 bytes = 372 bytes)
-				; unused
+				; 28 bytes unused (room for 7 more objects)
 
 * PLAYER 2 CREATURE LIST
 *
@@ -173,12 +173,14 @@ plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 4 bytes = 3
 *	Y	2 bytes
 
 plr2creatures	equ $1fa0	; where the creatures really are for player two (19 creatures x 4 bytes = 76 bytes)
+`				; 20 bytes unused (room for 5 more creatures)
 
-	org $3000	; can be $2000?
+	org $2000
 
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
+
 ; fetch in various source files
                 include sound.asm       ; fetch sound handling routines
                 include joystick.asm    ; fetch joystick handling routines
