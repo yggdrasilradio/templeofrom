@@ -137,7 +137,7 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 *
 
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
-				; 32 bytes unused
+				; 32 bytes unused (useless)
 
 * PLAYER 1 TREASURE LIST
 *
@@ -155,7 +155,7 @@ plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 byt
 *	X	2 bytes
 *	Y	2 bytes
 
-plr1monsters	equ $1db0	; where the monsters really are for player one (19 monsters x 4 bytes = 76 bytes)
+plr1monsters	equ $1db0	; player one monsters in the maze (19 monsters x 4 bytes = 76 bytes)
 				; 20 bytes unused (room for 5 more monsters)
 
 * PLAYER 1 TREASURE LIST
@@ -174,7 +174,7 @@ plr2objlist	equ $1e10	; player two treasures in the maze (93 treasures x 4 bytes
 *	X	2 bytes
 *	Y	2 bytes
 
-plr2monsters	equ $1fa0	; where the monsters really are for player two (19 monsters x 4 bytes = 76 bytes)
+plr2monsters	equ $1fa0	; player two monsters in the maze (19 monsters x 4 bytes = 76 bytes)
 				; 20 bytes unused (room for 5 more monsters)
 
 	org $2000

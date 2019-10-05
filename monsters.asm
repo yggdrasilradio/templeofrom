@@ -1,8 +1,8 @@
-; Creature location table (19 x 5 + 2 = 97 bytes)
-; X1, X2, Y1, Y2, creature ID (00 = spider, 20 = fireball)
+; Monster location table (19 x 5 + 2 = 97 bytes)
+; X1, X2, Y1, Y2, monster ID (00 = spider, 20 = fireball)
 ; (X1, Y1) and (X2, Y2) are the corners of a box
-; The creature's home position is at the center of the box
-; Players entering the box aggro the creature
+; The monster's home position is at the center of the box
+; Players entering the box aggro the monster
 ; Coordinates are 16 bits divided by 4 and stored in 8 bits
 LDD23
 	fcb $57,$65,$63,$75,$00

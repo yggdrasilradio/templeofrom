@@ -1,6 +1,6 @@
-; This is the object table. Each object entry consists of:
-; 1 byte: object score in bcd, hundreds and thousands digits
-; 16 bytes: object sprite
+; This is the treasure table. Each treasure entry consists of:
+; 1 byte: treasure score in bcd, hundreds and thousands digits
+; 16 bytes: treasure sprite
 ; any number of two byte coordinate pairs followed by a double NUL
 ;
 ; 00 . black
@@ -8,7 +8,7 @@
 ; 10 R red
 ; 11 W white
 
-; 93 objects total
+; 93 treasures total
 
 ; jade cross (23 total = 2300 points)
 objcross	fcb $01
