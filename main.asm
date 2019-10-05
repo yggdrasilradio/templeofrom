@@ -30,7 +30,7 @@ POTVAL	equ $15a
 
 	setdp 0
 
-creatureptr rmb 2 ; pointer to current creature locations
+monsterptr rmb 2 ; pointer to current monster locations
 portaloff rmb 1 ; nonzero means portals are currently disabled
 V03	rmb 2
 V05	rmb 2
@@ -86,7 +86,7 @@ VD6	rmb 1
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1
 VD9	rmb 1
-VDA	rmb 1	; object count
+VDA	rmb 1	; treasure count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1
 VDD	rmb 1
@@ -100,7 +100,7 @@ plr2state	rmb 6 ; player one game state (6 bytes)
 scorep2		rmb 3 ; player two's score
 scoreptr	rmb 2 ; pointer to current player's score
 texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
-objlistptr	rmb 2 ; pointer to current player's object list
+objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 1
 VFA	rmb 1
@@ -108,7 +108,7 @@ VFA	rmb 1
 sptr rmb 2
  ENDC
 
-* MASTER CREATURE LIST
+* MASTER MONSTER LIST
 *
 * Each list entry is 9 bytes:
 *	X1	2 bytes
@@ -117,9 +117,11 @@ sptr rmb 2
 *	Y2	2 bytes
 *	ID	1 byte (00 = spider, 20 = fireball)
 *
+*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position at the center
+*
 *	list ends with $0000
 
-creatures	equ $200	; unpacked creature home positions (9 bytes x 19 creatures + 2 bytes = 173 bytes)
+monsters	equ $200	; unpacked monster home positions (9 bytes x 19 monsters + 2 bytes = 173 bytes)
 				; 339 bytes unused
 
 * SCREEN 1
@@ -137,43 +139,43 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
 				; 32 bytes unused
 
-* PLAYER 1 OBJECT LIST
+* PLAYER 1 TREASURE LIST
 *
 * Each list item is 4 bytes:
 *	X	1 byte (X coordinate divided by 4)
 *	Y	1 byte (Y coordinate divided by 4)
-*	sprite	2 bytes (address of object sprite)
+*	sprite	2 bytes (address of treasure sprite)
 
-plr1objlist	equ $1c20	; player one objects in the maze (93 x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more objects)
+plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 bytes)
+				; 28 bytes unused (room for 7 more treasures)
 
-* PLAYER 1 CREATURE LIST
+* PLAYER 1 MONSTER LIST
 *
 * Each list entry is 4 bytes:
 *	X	2 bytes
 *	Y	2 bytes
 
-plr1creatures	equ $1db0	; where the creatures really are for player one (19 creatures x 4 bytes = 76 bytes)
-				; 20 bytes unused (room for 5 more creatures)
+plr1monsters	equ $1db0	; where the monsters really are for player one (19 monsters x 4 bytes = 76 bytes)
+				; 20 bytes unused (room for 5 more monsters)
 
-* PLAYER 1 OBJECT LIST
+* PLAYER 1 TREASURE LIST
 *
 * Each list item is 4 bytes:
 *	X	1 byte (X coordinate divided by 4)
 *	Y	1 byte (Y coordinate divided by 4)
-*	sprite	2 bytes (address of object sprite)
+*	sprite	2 bytes (address of treasure sprite)
 
-plr2objlist	equ $1e10	; player two objects in the maze (93 objects x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more objects)
+plr2objlist	equ $1e10	; player two treasures in the maze (93 treasures x 4 bytes = 372 bytes)
+				; 28 bytes unused (room for 7 more treasures)
 
-* PLAYER 2 CREATURE LIST
+* PLAYER 2 MONSTER LIST
 *
 * Each list entry is 4 bytes:
 *	X	2 bytes
 *	Y	2 bytes
 
-plr2creatures	equ $1fa0	; where the creatures really are for player two (19 creatures x 4 bytes = 76 bytes)
-`				; 20 bytes unused (room for 5 more creatures)
+plr2monsters	equ $1fa0	; where the monsters really are for player two (19 monsters x 4 bytes = 76 bytes)
+				; 20 bytes unused (room for 5 more monsters)
 
 	org $2000
 
@@ -541,7 +543,7 @@ fontdata	fcb $f0,$5f,$17,$80		; A
 
 	fcb $00,$00,$00,$00		; space
 
- include mapdata.asm
+ include lines.asm
 
 *** SEGMENT 2 ***
 
@@ -758,11 +760,11 @@ LCF50	nop			; flag for valid warm start routine
 	lbsr clearscores	; reset both players scores
 	clr numplayers		; set to no players
 
-	leax LDD23,pcr		; point to creature data table
-	ldy #creatures		; point to unpacked location for creature data table
+	leax LDD23,pcr		; point to monster data table
+	ldy #monsters		; point to unpacked location for monster data table
 LCF85	ldd ,x			; are we at the end of the table?
 	beq LCF92		; brif so
-	lbsr LD0C1		; expand the base/offset pairs for the creature
+	lbsr LD0C1		; expand the base/offset pairs for the monster
 	lda ,x+
 	sta ,y+
 	bra LCF85		; go handle another
@@ -770,13 +772,13 @@ LCF85	ldd ,x			; are we at the end of the table?
 LCF92	std ,y			; save end of table flag
 LCF94	lbsr LD531
 	clr V03
-	ldu #plr1objlist	; point to player one's object list
-	lbsr buildobjlist	; build object list
-	ldu #plr2objlist	; point to player two's object list
-	lbsr buildobjlist	; build object list
-	ldu #plr1creatures	; point to player one's creature locations
+	ldu #plr1objlist	; point to player one's treasure list
+	lbsr buildobjlist	; build treasure list
+	ldu #plr2objlist	; point to player two's treasure list
+	lbsr buildobjlist	; build treasure list
+	ldu #plr1monsters	; point to player one's monster locations
 	lbsr LDCE6		; set default locations
-	ldu #plr2creatures	; point to player two's creature locations
+	ldu #plr2monsters	; point to player two's monster locations
 	lbsr LDCE6		; set default locations
 	lbsr setstartpos	; set default start versions
 	clr VD7
@@ -945,12 +947,12 @@ LD0EE	ldu #plr1state		; point to player one state
 	clr V18
 	clr V19
 	clr VD1
-	ldu #plr1creatures	; point to player one's creature locations
-	stu creatureptr		; save as creature location pointer
+	ldu #plr1monsters	; point to player one's monster locations
+	stu monsterptr		; save as monster location pointer
 	ldu #scorep1		; point to player one's score
 	stu scoreptr		; set as current score pointer
-	ldu #plr1objlist	; point to player one's object list
-	stu objlistptr		; set as current object list pointer
+	ldu #plr1objlist	; point to player one's treasure list
+	stu objlistptr		; set as current treasure list pointer
 	leau plr1mess+1,pcr	; point to player one header message
 	lbsr showmess		; show it
 	clra			; stop maze scroll
@@ -992,12 +994,12 @@ LD156	ldu #plr2state		; point to player two's state data
 	clr V18
 	clr V19
 	clr VD1
-	ldu #plr2creatures	; point to player two's creature locations
-	stu creatureptr		; set as creature location pointer
+	ldu #plr2monsters	; point to player two's monster locations
+	stu monsterptr		; set as monster location pointer
 	ldu #scorep2		; point to player two's score
 	stu scoreptr		; set as current score pointer
-	ldu #plr2objlist	; point to the object list for player two
-	stu objlistptr		; save as current object list
+	ldu #plr2objlist	; point to the treasure list for player two
+	stu objlistptr		; save as current treasure list
 	leau plr2mess+1,pcr	; point to player two header message
 	lbsr showmess		; set heading
 	clra			; stop maze scroll
@@ -1730,218 +1732,31 @@ clearrender	ldd renderscr	; get pointer to start of current render screen
 	std endclear		; save top of space to clear
 	lbra LD3B9		; go clear the screen
 
-buildobjlist	clr VDA		; clear object count
-	leax objcross+1,pcr	; point to jade cross object data
-	bsr LD6DA		; add to object list
-	leax objring+1,pcr	; point to diamond ring object data
-	bsr LD6DA		; add to object list
-	leax objcup+1,pcr	; point to golden cup object data
-	bsr LD6DA		; add to object list
-	leax objgoblet+1,pcr	; point to crystal goblet object data
-	bsr LD6DA		; add to object list
-	leax objball+1,pcr	; point to crystal ball object data
-	bsr LD6DA		; add to object list
-	leax objpitcher+1,pcr	; point to silver pitcher object data
-	bsr LD6DA		; add to object list
-	leax objcrown+1,pcr	; point to golden crown object data
-	;bra LD6DA		; add to object list (this instruction is redundant)
+buildobjlist	clr VDA		; clear treasure count
+	leax objcross+1,pcr	; point to jade cross treasure data
+	bsr LD6DA		; add to treasure list
+	leax objring+1,pcr	; point to diamond ring treasure data
+	bsr LD6DA		; add to treasure list
+	leax objcup+1,pcr	; point to golden cup treasure data
+	bsr LD6DA		; add to treasure list
+	leax objgoblet+1,pcr	; point to crystal goblet treasure data
+	bsr LD6DA		; add to treasure list
+	leax objball+1,pcr	; point to crystal ball treasure data
+	bsr LD6DA		; add to treasure list
+	leax objpitcher+1,pcr	; point to silver pitcher treasure data
+	bsr LD6DA		; add to treasure list
+	leax objcrown+1,pcr	; point to golden crown treasure data
+	;bra LD6DA		; add to treasure list (this instruction is redundant)
 LD6DA	leay $10,x		; point to coordinate list (move past sprite data)
 LD6DD	ldd ,y++		; get coordinates
 	beq LD6E9		; brif end of list
-	std ,u++		; save coordinates of object
-	stx ,u++		; save pointer to object sprite
-	inc VDA			; bump object count
-	bra LD6DD		; go see if there's another of this object type
+	std ,u++		; save coordinates of treasure
+	stx ,u++		; save pointer to treasure sprite
+	inc VDA			; bump treasure count
+	bra LD6DD		; go see if there's another of this treasure type
 LD6E9	rts
 
-; This is the object table. Each object entry consists of:
-; 1 byte: object score in bcd, hundreds and thousands digits
-; 16 bytes: object sprite
-; any number of two byte coordinate pairs followed by a double NUL
-;
-; 00 . black
-; 01 B blue
-; 10 R red
-; 11 W white
-
-; 93 objects total
-
-; jade cross (23 total = 2300 points)
-objcross	fcb $01
-	fdb %0000000000000000 ; ........
-LD6ED	fdb %0000000000000000 ; ........
-	fdb %0000001000000000 ; ...R....
-	fdb %0000101010000000 ; ..RRR...
-	fdb %0000001000000000 ; ...R....
-	fdb %0000000000000000 ; ........
-	fdb %0000000000000000 ; ........
-	fdb %0000000000000000 ; ........
-	fcb $29,$09
-	fcb $1b,$24
-	fcb $87,$13
-	fcb $e5,$22
-	fcb $37,$7b
-	fcb $71,$46
-	fcb $8c,$44
-	fcb $5e,$4c
-	fcb $84,$4c
-	fcb $8b,$5a
-	fcb $74,$62
-	fcb $87,$63
-	fcb $60,$69
-	fcb $59,$71
-	fcb $a7,$58
-	fcb $c8,$51
-	fcb $d6,$64
-	fcb $e4,$61
-	fcb $44,$8b
-	fcb $25,$aa
-	fcb $81,$af
-	fcb $64,$b6
-	fcb $c8,$93
-	fcb $00,$00
-
-; diamond ring (23 total = 4600 points)
-objring	fcb $02
-	fdb %0000000000000000 ; ........
-	fdb %0000001111000000 ; ...WW...
-	fdb %0000001010000000 ; ...RR...
-	fdb %0000100000100000 ; ..R..R..
-	fdb %0000100000100000 ; ..R..R..
-	fdb %0000001010000000 ; ...RR...
-	fdb %0000000000000000 ; ........
-	fdb %0000000000000000 ; ........
-	fcb $48,$04
-	fcb $04,$0d
-	fcb $40,$0e
-	fcb $2e,$19
-	fcb $8b,$02
-	fcb $56,$35
-	fcb $8b,$34
-	fcb $b3,$06
-	fcb $35,$50
-	fcb $3d,$6d
-	fcb $10,$74
-	fcb $58,$5b
-	fcb $61,$65
-	fcb $b6,$52
-	fcb $2a,$96
-	fcb $02,$9b
-	fcb $0d,$a8
-	fcb $40,$aa
-	fcb $73,$8e
-	fcb $63,$8f
-	fcb $66,$9f
-	fcb $a6,$86
-	fcb $b4,$ae
-	fcb $00,$00
-
-; golden cup (19 total = 9500 points)
-objcup	fcb $05
-	fdb %0000000000000000 ; .........
-	fdb %0010101110100000 ; .RRWRR...
-	fdb %0010101110001000 ; .RRWR.R..
-	fdb %0010101110100000 ; .RRWRR...
-	fdb %0010111010000000 ; .RWRR....
-	fdb %0000101000000000 ; ..RR.....
-	fdb %0000000000000000 ; .........
-	fdb %0000000000000000 ; .........
-	fcb $29,$24
-	fcb $05,$28
-	fcb $3f,$34
-	fcb $63,$19
-	fcb $63,$35
-	fcb $d8,$05
-	fcb $b4,$1e
-	fcb $c8,$37
-	fcb $1f,$5c
-	fcb $25,$70
-	fcb $e2,$57
-	fcb $c5,$58
-	fcb $ac,$62
-	fcb $1c,$95
-	fcb $3b,$98
-	fcb $3a,$b5
-	fcb $8a,$9a
-	fcb $72,$a2
-	fcb $bb,$85
-	fcb $00,$00
-
-; crystal ball (10 total = 15000 points)
-objball	fcb $15
-	fdb %0000010101000000
-	fdb %0001010101010000
-	fdb %0101111101010100
-	fdb %0101110101010100
-	fdb %0101010111010100
-	fdb %0001010101010000
-	fdb %0000010101000000
-	fdb %0000000000000000
-	fcb $70,$0e
-	fcb $a8,$11
-	fcb $3d,$4c
-	fcb $d6,$4e
-	fcb $e6,$78
-	fcb $11,$9b
-	fcb $41,$a1
-	fcb $03,$b8
-	fcb $d9,$a4
-	fcb $c6,$b5
-	fcb $00,$00
-
-; crystal goblet (10 total = 10000 points)
-objgoblet	fcb $10
-	fdb %0001010111010000 ; .BBBWB..
-	fdb %0001010111010000 ; .BBBWB..
-	fdb %0001010111010000 ; .BBBWB..
-	fdb %0000010101000000 ; ..BBB...
-	fdb %0000000100000000 ; ...B....
-	fdb %0000000100000000 ; ...B....
-	fdb %0001010111010000 ; .BBBWB..
-	fdb %0000000000000000 ; ........
-	fcb $22,$03
-	fcb $38,$3a
-	fcb $05,$3b
-	fcb $58,$08
-	fcb $b9,$10
-	fcb $a5,$22
-	fcb $10,$48
-	fcb $10,$8e
-	fcb $73,$b8
-	fcb $b2,$9f
-	fcb $00,$00
-
-; silver pitcher (5 total = 15000 points)
-objpitcher	fcb $30
-	fdb %0000000000000000 ; ........
-	fdb %0011110111110000 ; .WWBWW..
-	fdb %0000110111001100 ; ..WBW.W.
-	fdb %0000110111001100 ; ..WBW.W.
-	fdb %0011111101110000 ; .WWWBW..
-	fdb %0011111101110000 ; .WWWBW..
-	fdb %0000110111000000 ; ..WBW...
-	fdb %0000000000000000 ; ........
-	fcb $65,$1d
-	fcb $96,$1f
-	fcb $2c,$b4
-	fcb $df,$99
-	fcb $e5,$b7
-	fcb $00,$00
-
-; golden crown (3 total = 15000 points)
-objcrown	fcb $50
-	fdb %0000000000000000 ; ........
-	fdb %0000000000000000 ; ........
-	fdb %0000001100000000 ; ...W....
-	fdb %1100101011001100 ; W.RRW.W.
-	fdb %1010101010101000 ; RRRRRRR.
-	fdb %1010101010101000 ; RRRRRRR.
-	fdb %0000000000000000 ; ........
-	fdb %0000000000000000 ; ........
-	fcb $09,$08
-	fcb $e8,$8d
-	fcb $ec,$aa
-	fcb $00,$00
+	include treasures.asm
 
 LD829	lda curposy
 	ldb curposx
@@ -2025,7 +1840,7 @@ LD8BF	leau 4,u
 	bne LD8E4
 	ldu objlistptr
 	lbsr buildobjlist
-	ldu creatureptr
+	ldu monsterptr
 	lbsr LDCE6
 	lbsr setstartpos
 	lbsr LDFD7
@@ -2369,10 +2184,10 @@ LDB86	lbsr LDAEF
 	lbsr LCD49		; 4 part music routine
 	puls pc,a
 
-LDB96	ldu creatureptr
+LDB96	ldu monsterptr
 	leau -4,u
 	pshs u
-	ldu #creatures
+	ldu #monsters
 	leau -9,u
 	clra
 	ldb curposx
@@ -2526,8 +2341,8 @@ LDCDF	addd #1
 LDCE2	clr VD5
 LDCE4	puls pc,x
 
-* initialize creature home positions
-LDCE6	ldx #creatures		; point to creature table
+* initialize monster home positions
+LDCE6	ldx #monsters		; point to monster table
 LDCE9	ldd ,x			; get first coordinate base
 	beq LDD07		; brif end of table
 	ldd 2,x			; set first coordinate modification
@@ -2545,7 +2360,7 @@ LDCE9	ldd ,x			; get first coordinate base
 	addd 4,x		; add to base coordinate
 	std ,u++		; save real coordinate
 	leax 9,x		; move to next table entry
-	bra LDCE9		; go process another creature
+	bra LDCE9		; go process another monster
 LDD07	rts
 
 LDD08	lda #$ff
@@ -2562,45 +2377,7 @@ LDD08	lda #$ff
 	std V8D
 	rts
 
-; Creature location table (19 x 5 + 2 = 97 bytes)
-; X1, X2, Y1, Y2, creature ID (00 = spider, 20 = fireball)
-; (X1, Y1) and (X2, Y2) are the corners of a box
-; The creature's home position is at the center of the box
-; Players entering the box aggro the creature
-; Coordinates are 16 bits divided by 4 and stored in 8 bits
-LDD23
-	fcb $57,$65,$63,$75,$00
-	fcb $03,$10,$02,$10,$20
-	fcb $20,$2d,$02,$10,$20
-	fcb $28,$32,$18,$32,$00
-	fcb $52,$68,$03,$11,$00
-	fcb $6d,$80,$0b,$23,$20
-	fcb $78,$8d,$0b,$23,$20
-	fcb $b2,$bf,$03,$14,$00
-	fcb $d0,$db,$03,$14,$00
-	fcb $38,$48,$93,$a4,$00
-	fcb $20,$30,$a8,$bb,$00
-	fcb $38,$48,$a8,$bb,$20
-	fcb $a5,$af,$4d,$67,$00
-	fcb $b3,$bd,$4d,$67,$00
-	fcb $c1,$cb,$4d,$67,$00
-	fcb $30,$41,$4a,$5f,$20
-	fcb $0d,$23,$55,$60,$00
-	fcb $61,$78,$b0,$bd,$00
-	fcb $b8,$d4,$83,$a5,$20
-	fcb $00,$00		; mark end of table
-
-LDD84	fcb $20,$08,$08,$20,$03,$c0,$ab,$ea	; 2 spider sprites 8x8
-	fcb $0b,$e0,$23,$c8,$83,$c2,$80,$02
-
-	fcb $08,$20,$88,$22,$23,$c8,$0b,$e0
-	fcb $03,$c0,$2b,$e8,$83,$c2,$00,$00
-
-	fcb $20,$20,$02,$08,$20,$80,$2a,$20	; 2 fireball sprites 8x8
-	fcb $0a,$88,$0a,$a0,$0a,$a0,$02,$80
-
-	fcb $02,$00,$20,$80,$08,$80,$20,$08
-	fcb $28,$a0,$0a,$a0,$0a,$a0,$02,$80
+	include monsters.asm
 
 ; Render an 8x5 bitmap at coordinates (B,A).
 draw8x5	pshs b,a		; save the render coordinates
@@ -2796,22 +2573,7 @@ LDF1A	fdb %0000010101000000
 	fdb %0000010101000000
 	fdb %0000000000000000
 
-; Portal list; each entry consists of:
-; X coordinate (16 bits)
-; Y coordinate (16 bits)
-; 4 sets of destination coordinates (in packed divided by four format)
-;   one of which is chosen at "random" when a portal is activated
-LDF2A	fcb $01,$b0,$01,$54			; PORTAL 1 6c55 432,340 this is the one visible on startup
-	fcb $0b,$0b,$ba,$09,$13,$48,$aa,$89	; 	PORTAL 2 PORTAL 3 PORTAL 4 PORTAL 5
-	fcb $00,$2c,$00,$2c			; PORTAL 2 0b0b 44,44
-	fcb $6c,$55,$ba,$09,$13,$48,$aa,$89	;	PORTAL 1 PORTAL 3 PORTAL 4 PORTAL 5 
-	fcb $02,$e8,$00,$24			; PORTAL 3 ba09 744,36
-	fcb $0b,$0b,$6c,$55,$13,$48,$aa,$89	;	PORTAL 2 PORTAL 1 PORTAL 4 PORTAL 5 
-	fcb $00,$4c,$01,$20			; PORTAL 4 1348 76,288
-	fcb $0b,$0b,$ba,$09,$6c,$55,$aa,$89	;	PORTAL 2 PORTAL 3 PORTAL 1 PORTAL 5 
-	fcb $02,$a8,$02,$24			; PORTAL 5 aa89 680,548
-	fcb $0b,$0b,$ba,$09,$13,$48,$6c,$55	;	PORTAL 2 PORTAL 3 PORTAL 4 PORTAL 1 
-	fdb 0			; flag end of table
+	include portals.asm
 
 drawmazeboth lbsr clearrender	; get a clean render area
 	lbsr drawvert		; draw the vertical lines
