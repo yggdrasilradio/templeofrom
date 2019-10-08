@@ -12,7 +12,7 @@
 ;   routine will try 10 times to get a read that matches the result from the
 ;   *last call* to GETJOY. That means if the joystick moved, it will always do
 ;   all 10 reads.
-JOYATTEMPT      equ 10          ; number of times to try reading an axis
+JOYATTEMPT      equ 5           ; number of times to try reading an axis
 GETJOY          jsr SNDOFF      ; turn off sound (we mess with the MUX here)
                 ldx #POTVAL+4   ; point to the end of the axis data
                 ldb #3          ; there are four axes to read - 3 is highest axis number
