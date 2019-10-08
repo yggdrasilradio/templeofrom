@@ -8,6 +8,7 @@
 ; 0400-0FFF	graphics screen #1
 ; 1000-1BFF	graphics screen #2
 ; 1C00		explosion sprite queue
+; 2000		code
 
 PIA0.DA	equ $ff00
 PIA0.CA	equ $ff01
@@ -117,11 +118,12 @@ sptr rmb 2
 *	Y2	2 bytes
 *	ID	1 byte (00 = spider, 20 = fireball)
 *
-*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position at the center
+*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
+*	25% down from the left and top edges
 *
 *	list ends with $0000
 
-monsters	equ $200	; unpacked monster home positions (9 bytes x 19 monsters + 2 bytes = 173 bytes)
+monsters	equ $200	; unpacked monster data (9 bytes x 19 monsters + 2 bytes = 173 bytes)
 				; 339 bytes unused
 
 * SCREEN 1
@@ -383,55 +385,51 @@ LC148	puls a			; clean up stack
 
 ; explosion sprites
 
-LC14B	fcb $05 ; explosion1-LC14B
-	fcb $14 ; explosion2-LC14B
-	fcb $23 ; explosion3-LC14B
-	fcb $32 ; explosion4-LC14B
+LC14B	fcb explosion1-*
+	fcb explosion2-*
+	fcb explosion3-*
+	fcb explosion4-*
 	fcb $00 ; end of table marker
 
 explosion1
-	fcb $0000 ; 0000000000000000	........
-	fdb $0000 ; 0000000000000000	........
-	fdb $000c ; 0000000000001100	......W.
-	fdb $000f ; 0000000000001111	......WW
-	fdb $c00c ; 1100000000001100	W.....W.
-	fdb $0000 ; 0000000000000000	........
-	fdb $0000 ; 0000000000000000	........
-	fdb $0000 ; 0000000000000000	........
-	fdb $0000
+	fcb $00,$00 ; ........
+	fcb $00,$00 ; ........
+	fcb $03,$00 ; ...w....
+	fcb $0f,$c0 ; ..www...
+	fcb $03,$00 ; ...w....
+	fcb $00,$00 ; ........
+	fcb $00,$00 ; ........
+	fcb $00,$00 ; ........
 
 explosion2
-	fcb $c000 ; 1100000000000000
-	fdb $0c30 ; 0000110000110000
-	fdb $300e ; 0011000000001110
-	fdb $c00a ; 1100000000001010
-	fdb $800e ; 1000000000001110
-	fdb $c030 ; 1100000000110000
-	fdb $30c0 ; 0011000011000000
-	fdb $0c00 ; 0000110000000000
-	fdb $0000
+	fcb $c0,$0c ; w.....w.
+	fcb $30,$30 ; .w...w..
+	fcb $0e,$c0 ; ..wrw...
+	fcb $0a,$80 ; ..rrr...
+	fcb $0e,$c0 ; ..wrw...
+	fcb $30,$30 ; .w...w..
+	fcb $c0,$0c ; w.....w.
+	fcb $00,$00 ; ........
 
 explosion3
-	fcb $0000 ; 0000000000000000
-	fdb $2020 ; 0010000000100000
-	fdb $c008 ; 1100000000001000
-	fdb $80ca ; 1000000011001010
-	fdb $000c ; 0000000000001100
-	fdb $8000 ; 1000000000000000
-	fdb $0080 ; 0000000010000000
-	fdb $3000 ; 0011000000000000
-	fdb $0000
+	fcb $00,$20 ; .....r..
+	fcb $20,$c0 ; .r..w...
+	fcb $08,$80 ; ..r.r...
+	fcb $ca,$00 ; w.rr....
+	fcb $0c,$80 ; ..w.r...
+	fcb $00,$00 ; ........
+	fcb $80,$30 ; r....w..
+	fcb $00,$00 ; ........
 
 explosion4
-	fcb $0000 ; 0000000000000000
-	fdb $000c ; 0000000000001100
-	fdb $0000 ; 0000000000000000
-	fdb $2003 ; 0010000000000011
-	fdb $0008 ; 0000000000001000
-	fdb $0000 ; 0000000000000000
-	fdb $0000 ; 0000000000000000
-	fdb $0000 ; 0000000000000000
-	fcb $0000
+	fcb $00,$00 ; ........
+	fcb $0c,$00 ; ..w.....
+	fcb $00,$20 ; .....r..
+	fcb $03,$00 ; ...w....
+	fcb $08,$00 ; ..r.....
+	fcb $00,$00 ; ........
+	fcb $00,$00 ; ........
+	fcb $00,$00 ; ........
 
 ; one byte is 8 bits, 2 bits per pixel, so one byte is 4 pixels, each sprite is 8x8 so 8x2 bytes = 16 bytes
 
@@ -1559,7 +1557,7 @@ LD562	ldd ,u		; find blank slot in 8 slots of 4 bytes each
 	leax -1,x
 	bne LD562
 	bra LD57C
-LD56E	leax LC14B,pcr
+LD56E	leax LC14B,pcr	; queue explosion, starting with first sprite
 	stx ,u++
 	tfr y,d
 	suba #4
