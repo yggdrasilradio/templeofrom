@@ -2,7 +2,7 @@
 ; rendering some lines that are definitely outside the viewable area.
 ;
 ; Line data, both vertical and horizontal, consists of three bytes each. The
-; first byte is the vertical or horizontal coordinate that covers the whole line.
+; first byte is the vertical or horizontal coordinate for the whole line.
 ;
 ; The second is the start of the line (top or left). The third is the end of
 ; the line (bottom or right). All coordinates are divided by four which means
@@ -816,7 +816,7 @@ horscr9	fcb 144,14,22
 	fcb 158,38,45
 	fcb 158,161,167
 	fcb 158,170,184
-horscr10	fcb 162,161,162
+horscr10 fcb 162,161,162
 	fcb 162,163,184
 	fcb 162,216,220
 	fcb 164,56,72
@@ -860,7 +860,7 @@ horscr10	fcb 162,161,162
 	fcb 175,162,165
 	fcb 175,187,209
 	fcb 175,216,229
-horscr11	fcb 176,97,120
+horscr11 fcb 176,97,120
 	fcb 176,1,4
 	fcb 176,5,11
 	fcb 176,217,229
@@ -889,4 +889,4 @@ horscr11	fcb 176,97,120
 horscr12
 horscr13
 horscr14
-horscr15	fcb 0		; mark end of horizontal lines table
+horscr15 fcb 0		; mark end of horizontal lines table
