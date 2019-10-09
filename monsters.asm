@@ -30,19 +30,43 @@ LDD23
 	fcb $c1,$cb,$4d,$67,$00
 	fcb $30,$41,$4a,$5f,$20
 	fcb $0d,$23,$55,$60,$00
-	fcb $61,$78,$9d,$aa,$00 ; <-- NEW spider in room just above next room
-	fcb $61,$78,$b0,$bd,$00 ; <-- spider at center bottom of maze
-	fcb $b8,$d4,$83,$a5,$20 ; <-- fireball at lower right
+	fcb $61,$78,$9d,$aa,$00 ; NEW spider in room just above next room
+	fcb $61,$78,$b0,$bd,$00 ; spider at center bottom of maze
+	fcb $b8,$d4,$83,$a5,$20 ; fireball at lower right
 	fcb $00,$00		; mark end of table
 
-LDD84	fcb $20,$08,$08,$20,$03,$c0,$ab,$ea	; 2 spider sprites 8x8
-	fcb $0b,$e0,$23,$c8,$83,$c2,$80,$02
+LDD84	fcb $20,$08 ; .r....r.	2 spider sprites 8x8
+	fcb $08,$20 ; ..r..r..
+	fcb $03,$c0 ; ...ww...
+	fcb $ab,$ea ; rrrwwrrr
+	fcb $0b,$e0 ; ..rwwr..
+	fcb $23,$c8 ; .r.ww.r.
+	fcb $83,$c2 ; r..ww..r
+	fcb $80,$02 ; r......r
 
-	fcb $08,$20,$88,$22,$23,$c8,$0b,$e0
-	fcb $03,$c0,$2b,$e8,$83,$c2,$00,$00
+	fcb $08,$20 ; ..r..r..
+	fcb $88,$22 ; r.r..r.r
+	fcb $23,$c8 ; .r.ww.r.
+	fcb $0b,$e0 ; ..rwwr..
+	fcb $03,$c0 ; ...ww...
+	fcb $2b,$e8 ; .rrwwrr.
+	fcb $83,$c2 ; r..ww..r
+	fcb $00,$00 ; ........
 
-	fcb $20,$20,$02,$08,$20,$80,$2a,$20	; 2 fireball sprites 8x8
-	fcb $0a,$88,$0a,$a0,$0a,$a0,$02,$80
+	fcb $20,$20 ; .r...r.. 2 fireball sprites 8x8
+	fcb $02,$08 ; ...r..r.
+	fcb $20,$80 ; .r..r...
+	fcb $2a,$20 ; .rrr.r..
+	fcb $0a,$88 ; ..rrr.r.
+	fcb $0a,$a0 ; ..rrrr..
+	fcb $0a,$a0 ; ..rrrr..
+	fcb $02,$80 ; ...rr...
 
-	fcb $02,$00,$20,$80,$08,$80,$20,$08
-	fcb $28,$a0,$0a,$a0,$0a,$a0,$02,$80
+	fcb $02,$00 ; ...r....
+	fcb $20,$80 ; .r..r...
+	fcb $08,$80 ; ..r.r...
+	fcb $20,$08 ; .r....r.
+	fcb $28,$a0 ; .rr.rr..
+	fcb $0a,$a0 ; ..rrrr..
+	fcb $0a,$a0 ; ..rrrr..
+	fcb $02,$80 ; ...rr...
