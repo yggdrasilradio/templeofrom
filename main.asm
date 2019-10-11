@@ -394,39 +394,39 @@ LC14B	fcb explosion1-*
 explosion1
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
-	fcb $03,$00 ; ...w....
-	fcb $0f,$c0 ; ..www...
-	fcb $03,$00 ; ...w....
+	fcb $03,$00 ; ...W....
+	fcb $0f,$c0 ; ..WWW...
+	fcb $03,$00 ; ...W....
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 
 explosion2
-	fcb $c0,$0c ; w.....w.
-	fcb $30,$30 ; .w...w..
-	fcb $0e,$c0 ; ..wrw...
-	fcb $0a,$80 ; ..rrr...
-	fcb $0e,$c0 ; ..wrw...
-	fcb $30,$30 ; .w...w..
-	fcb $c0,$0c ; w.....w.
+	fcb $c0,$0c ; W.....W.
+	fcb $30,$30 ; .W...W..
+	fcb $0e,$c0 ; ..WRW...
+	fcb $0a,$80 ; ..RRR...
+	fcb $0e,$c0 ; ..WRW...
+	fcb $30,$30 ; .W...W..
+	fcb $c0,$0c ; W.....W.
 	fcb $00,$00 ; ........
 
 explosion3
-	fcb $00,$20 ; .....r..
-	fcb $20,$c0 ; .r..w...
-	fcb $08,$80 ; ..r.r...
-	fcb $ca,$00 ; w.rr....
-	fcb $0c,$80 ; ..w.r...
+	fcb $00,$20 ; .....R..
+	fcb $20,$c0 ; .R..W...
+	fcb $08,$80 ; ..R.R...
+	fcb $ca,$00 ; W.RR....
+	fcb $0c,$80 ; ..W.R...
 	fcb $00,$00 ; ........
-	fcb $80,$30 ; r....w..
+	fcb $80,$30 ; R....W..
 	fcb $00,$00 ; ........
 
 explosion4
 	fcb $00,$00 ; ........
-	fcb $0c,$00 ; ..w.....
-	fcb $00,$20 ; .....r..
-	fcb $03,$00 ; ...w....
-	fcb $08,$00 ; ..r.....
+	fcb $0c,$00 ; ..W.....
+	fcb $00,$20 ; .....R..
+	fcb $03,$00 ; ...W....
+	fcb $08,$00 ; ..R.....
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
@@ -499,7 +499,7 @@ authmess fcb 13
 fontidx	fcc 'ABCDEFGHI1KLMNOP9RST8VW4Y235JQXZU6790 '	; font index character list
 ; Font data. Each character is encoded as 32 bits. The character matrix is 5x6 with
 ; the bits packed left to right and top down starting at the msb of each byte.
-fontdata	fcb $f0,$5f,$17,$80		; A
+fontdata fcb $f0,$5f,$17,$80		; A
 	fcb $f4,$7d,$1f,$00		; B
 	fcb $74,$61,$17,$00		; C
 	fcb $f4,$63,$1f,$00		; D
@@ -547,122 +547,7 @@ fontdata	fcb $f0,$5f,$17,$80		; A
 
 LCD46	lbra LCF50
 
-* FOUR PART MUSIC ROUTINE
-LCD49	pshs u
-	clrb			; enable sound output from DAC
-	jsr SETMUX
-	jsr SNDON
-	puls u
-	clra
-	clrb
-	std V05
-	std V07
-	std V09
-	std V0B
-LCD5E	lda ,u+
-	beq LCDC8
-	sta V15
-	leay LCDC9,pcr
-	lda ,u+
-	ldd a,y
-	std V0D
-	lda ,u+
-	ldd a,y
-	std V0F
-	lda ,u+
-	ldd a,y
-	std V11
-	lda ,u+
-	ldd a,y
-	std V13
-LCD80	ldy #$28
-LCD84	ldx #0
-	ldb V05
-	bpl LCD8C
-	comb
-LCD8C	abx
-	ldb V07
-	bpl LCD92
-	comb
-LCD92	abx
-	ldb V09
-	bpl LCD98
-	comb
-LCD98	abx
-	ldb V0B
-	bpl LCD9E
-	comb
-LCD9E	abx
-	tfr x,d
-	lsra
-	rorb
-	stb PIA1.DA
-	ldd V05
-	addd V0D
-	std V05
-	ldd V07
-	addd V0F
-	std V07
-	ldd V09
-	addd V11
-	std V09
-	ldd V0B
-	addd V13
-	std V0B
-	leay ,-y
-	bne LCD84
-	dec V15
-	bne LCD80
-	bra LCD5E
-LCDC8	rts
-
-* MUSICAL NOTES
-LCDC9	fcb $00,$00,$02,$6f,$02,$94,$02,$eb
-	fcb $02,$e4,$03,$10,$03,$3f,$03,$71
-	fcb $03,$a5,$03,$dc,$04,$17,$04,$56
-	fcb $04,$98,$04,$dd,$05,$28,$05,$76
-	fcb $05,$c9,$06,$21,$06,$7f,$06,$e2
-	fcb $07,$4a,$07,$b9,$08,$2f,$08,$ac
-	fcb $09,$30,$09,$bb,$0a,$50,$0a,$ed
-	fcb $0b,$93,$0c,$43,$0c,$fe,$0d,$c4
-	fcb $0e,$95,$0f,$73,$10,$5f,$11,$58
-	fcb $12,$60,$13,$77,$14,$a0,$15,$da
-	fcb $17,$26,$18,$87,$19,$fc,$1b,$88
-	fcb $1d,$2b,$1e,$e7,$20,$be,$22,$b0
-	fcb $24,$c0
-
-* SONG 1: HAPPY "TURN STARTING" THEME -- ORIGINAL TUNE BY RICK ADAMS
-* Each note is 5 bytes: duration, then a byte for each the four notes
-* The table ends when there's a duration of zero
-LCE2B	fcb $12,$32,$2c,$52,$3a,$12,$36,$30
-	fcb $54,$3c,$12,$3a,$2c,$58,$28,$12
-	fcb $3c,$30,$5c,$2c,$48,$40,$36,$60
-	fcb $48,$12,$40,$32,$40,$32,$12,$40
-	fcb $30,$40,$30,$36,$3c,$30,$5c,$3c
-	fcb $12,$3c,$32,$60,$3c,$24,$3c,$30
-	fcb $5c,$3c,$24,$3a,$30,$58,$3a,$12
-	fcb $3a,$32,$58,$3a,$24,$3a,$30,$3a
-	fcb $30,$12,$3a,$28,$3a,$28,$5a,$36
-	fcb $28,$54,$36,$12,$36,$24,$36,$24
-	fcb $24,$32,$28,$52,$3a,$24,$32,$28
-	fcb $4a,$32,$24,$32,$28,$4e,$36,$27
-	fcb $32,$28,$52,$3a,$00
-
-* SONG 2: CHOPIN'S FUNERAL MARCH FOR PLAYER'S DEATH
-LCE90	fcb $6c,$32,$38,$40,$0a,$04,$00,$00
-	fcb $00,$00,$48,$32,$38,$40,$0a,$04
-	fcb $00,$00,$00,$00,$24,$32,$38,$40
-	fcb $0a,$04,$00,$00,$00,$00,$6c,$32
-	fcb $38,$40,$0a,$04,$00,$00,$00,$00
-	fcb $48,$38,$30,$42,$38,$04,$00,$00
-	fcb $00,$00,$24,$36,$32,$40,$36,$04
-	fcb $00,$00,$00,$00,$48,$36,$32,$40
-	fcb $36,$04,$00,$00,$00,$00,$24,$32
-	fcb $38,$40,$0a,$04,$00,$00,$00,$00
-	fcb $48,$32,$38,$40,$0a,$04,$00,$00
-	fcb $00,$00,$24,$30,$38,$40,$08,$04
-	fcb $00,$00,$00,$00,$76,$32,$38,$40
-	fcb $0a,$00
+	include music.asm
 
 ; This generates a pseudo random sequence with period 128.
 random	pshs a			; save registers
@@ -1842,7 +1727,7 @@ LD8BF	leau 4,u
 	lbsr LDCE6
 	lbsr setstartpos
 	lbsr LDFD7
-	leau LCE2B,pcr
+	leau LCE2B,pcr		; opening tune
 	lbsr LCD49
 LD8E4	rts
 
@@ -2076,19 +1961,19 @@ LDAC1	lbsr random
 	std V52
 LDACD	puls pc,u,b,a
 
-LDACF	fdb $0c30 ; ..*..*.. Here's the bat!
-	fdb $3c3c ; .**..**.
-	fdb $3ffc ; .******.
-	fdb $f3cf ; **.**.**
-	fdb $c3c3 ; *..**..*
-	fdb $c003 ; *......*
+LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
+	fdb $3c3c ; .WW..WW.
+	fdb $3ffc ; .WWWWWW.
+	fdb $f3cf ; WW.WW.WW
+	fdb $c3c3 ; W..WW..W
+	fdb $c003 ; W......W
 	fdb $0000 ; ........
 	fdb $0000 ; ........
-	fdb $c003 ; *......*
-	fdb $c003 ; *......*
-	fdb $f3cf ; **.**.**
-	fdb $3ffc ; .******.
-	fdb $0c30 ; ..*..*..
+	fdb $c003 ; W......W
+	fdb $c003 ; W......W
+	fdb $f3cf ; WW.WW.WW
+	fdb $3ffc ; .WWWWWW.
+	fdb $0c30 ; ..W..W..
 	fdb $0000 ; ........
 	fdb $0000 ; ........
 	fdb $0000 ; ........
