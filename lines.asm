@@ -115,7 +115,7 @@ vertscr1 fcb 16,2,12
 	fcb 29,132,140
 	fcb 30,133,140
 	fcb 30,40,46
-vertscr2	fcb 32,2,12
+vertscr2 fcb 32,2,12
 	fcb 32,13,16
 	fcb 32,34,40
 	fcb 32,140,144
@@ -136,7 +136,7 @@ vertscr2	fcb 32,2,12
 	fcb 41,110,124
 	fcb 45,2,16
 	fcb 45,148,158
-vertscr3	fcb 48,168,172
+vertscr3 fcb 48,168,172
 	fcb 48,174,187
 	fcb 48,74,80
 	fcb 50,80,85
@@ -166,7 +166,7 @@ vertscr3	fcb 48,168,172
 	fcb 63,36,40
 	fcb 63,143,147
 	fcb 63,80,85
-vertscr4	fcb 64,28,31
+vertscr4 fcb 64,28,31
 	fcb 64,33,36
 	fcb 64,28,31
 	fcb 65,28,36
@@ -196,7 +196,7 @@ vertscr4	fcb 64,28,31
 	fcb 75,104,123
 	fcb 78,2,9
 	fcb 78,55,61
-vertscr5	fcb 81,42,48
+vertscr5 fcb 81,42,48
 	fcb 81,50,56
 	fcb 82,3,17
 	fcb 86,17,42
@@ -220,7 +220,7 @@ vertscr5	fcb 81,42,48
 	fcb 93,140,147
 	fcb 95,79,83
 	fcb 95,86,90
-vertscr6	fcb 96,42,56
+vertscr6 fcb 96,42,56
 	fcb 96,22,26
 	fcb 96,27,32
 	fcb 97,157,165
@@ -243,7 +243,7 @@ vertscr6	fcb 96,42,56
 	fcb 109,11,24
 	fcb 109,24,35
 	fcb 109,125,140
-vertscr7	fcb 112,68,73
+vertscr7 fcb 112,68,73
 	fcb 112,96,101
 	fcb 113,141,147
 	fcb 114,73,80
@@ -269,7 +269,7 @@ vertscr7	fcb 112,68,73
 	fcb 127,80,83
 	fcb 127,86,89
 	fcb 127,125,141
-vertscr8	fcb 128,152,158
+vertscr8 fcb 128,152,158
 	fcb 128,174,179
 	fcb 129,125,141
 	fcb 130,67,71
@@ -300,7 +300,7 @@ vertscr8	fcb 128,152,158
 	fcb 142,102,112
 	fcb 142,141,147
 	fcb 142,152,158
-vertscr9	fcb 144,48,56
+vertscr9 fcb 144,48,56
 	fcb 144,67,71
 	fcb 144,75,79
 	fcb 144,90,94
@@ -325,7 +325,7 @@ vertscr9	fcb 144,48,56
 	fcb 153,71,89
 	fcb 153,91,109
 	fcb 153,111,114
-vertscr10	fcb 161,158,162
+vertscr10 fcb 161,158,162
 	fcb 162,131,142
 	fcb 162,162,175
 	fcb 163,162,174
@@ -361,7 +361,7 @@ vertscr10	fcb 161,158,162
 	fcb 175,77,88
 	fcb 175,88,103
 	fcb 175,131,142
-vertscr11	fcb 178,3,20
+vertscr11 fcb 178,3,20
 	fcb 178,28,38
 	fcb 179,77,88
 	fcb 179,88,103
@@ -381,7 +381,7 @@ vertscr11	fcb 178,3,20
 	fcb 191,15,20
 	fcb 191,28,31
 	fcb 191,35,38
-vertscr12	fcb 192,142,153
+vertscr12 fcb 192,142,153
 	fcb 193,77,88
 	fcb 193,88,103
 	fcb 196,153,165
@@ -406,7 +406,7 @@ vertscr12	fcb 192,142,153
 	fcb 203,180,184
 	fcb 204,142,153
 	fcb 204,35,46
-vertscr13	fcb 208,3,8
+vertscr13 fcb 208,3,8
 	fcb 208,15,20
 	fcb 208,53,62
 	fcb 209,165,174
@@ -439,7 +439,7 @@ vertscr13	fcb 208,3,8
 	fcb 220,162,165
 	fcb 220,166,170
 	fcb 221,152,156
-vertscr14	fcb 224,28,31
+vertscr14 fcb 224,28,31
 	fcb 224,35,38
 	fcb 224,77,80
 	fcb 224,87,93
