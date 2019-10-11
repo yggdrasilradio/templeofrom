@@ -6,12 +6,6 @@
 ; Players entering the box aggro the monster
 ; Coordinates are 16 bits divided by 4 and stored in 8 bits
 
-; x 385 to 477, $60 to $77 +1 = $61, $78 spider at center bottom of maze
-; y 701 to 753, $AF to $BC +1 = $B0, $BD
-
-; x 385 to 477, $60 to $77 +1 = $61, $78 new spider
-; y 622 to 674, $9C to $A9 +1 = $9D, $AA
-
 LDD23
 	fcb $57,$65,$63,$75,$00
 	fcb $03,$10,$02,$10,$20 ; fireball in queen's bedroom
@@ -35,38 +29,38 @@ LDD23
 	fcb $b8,$d4,$83,$a5,$20 ; fireball at lower right
 	fcb $00,$00		; mark end of table
 
-LDD84	fcb $20,$08 ; .r....r.	2 spider sprites 8x8
-	fcb $08,$20 ; ..r..r..
-	fcb $03,$c0 ; ...ww...
-	fcb $ab,$ea ; rrrwwrrr
-	fcb $0b,$e0 ; ..rwwr..
-	fcb $23,$c8 ; .r.ww.r.
-	fcb $83,$c2 ; r..ww..r
-	fcb $80,$02 ; r......r
+LDD84	fcb $20,$08 ; .R....R.	2 spider sprites 8x8
+	fcb $08,$20 ; ..R..R..
+	fcb $03,$c0 ; ...WW...
+	fcb $ab,$ea ; RRRWWRRR
+	fcb $0b,$e0 ; ..RWWR..
+	fcb $23,$c8 ; .R.WW.R.
+	fcb $83,$c2 ; R..WW..R
+	fcb $80,$02 ; R......R
 
-	fcb $08,$20 ; ..r..r..
-	fcb $88,$22 ; r.r..r.r
-	fcb $23,$c8 ; .r.ww.r.
-	fcb $0b,$e0 ; ..rwwr..
-	fcb $03,$c0 ; ...ww...
-	fcb $2b,$e8 ; .rrwwrr.
-	fcb $83,$c2 ; r..ww..r
+	fcb $08,$20 ; ..R..R..
+	fcb $88,$22 ; R.R..R.R
+	fcb $23,$c8 ; .R.WW.r.
+	fcb $0b,$e0 ; ..RWWR..
+	fcb $03,$c0 ; ...WW...
+	fcb $2b,$e8 ; .RRWWRR.
+	fcb $83,$c2 ; R..WW..R
 	fcb $00,$00 ; ........
 
-	fcb $20,$20 ; .r...r.. 2 fireball sprites 8x8
-	fcb $02,$08 ; ...r..r.
-	fcb $20,$80 ; .r..r...
-	fcb $2a,$20 ; .rrr.r..
-	fcb $0a,$88 ; ..rrr.r.
-	fcb $0a,$a0 ; ..rrrr..
-	fcb $0a,$a0 ; ..rrrr..
-	fcb $02,$80 ; ...rr...
+	fcb $20,$20 ; .R...R.. 2 fireball sprites 8x8
+	fcb $02,$08 ; ...R..R.
+	fcb $20,$80 ; .R..R...
+	fcb $2a,$20 ; .RRR.R..
+	fcb $0a,$88 ; ..RRR.R.
+	fcb $0a,$a0 ; ..RRRR..
+	fcb $0a,$a0 ; ..RRRR..
+	fcb $02,$80 ; ...RR...
 
-	fcb $02,$00 ; ...r....
-	fcb $20,$80 ; .r..r...
-	fcb $08,$80 ; ..r.r...
-	fcb $20,$08 ; .r....r.
-	fcb $28,$a0 ; .rr.rr..
-	fcb $0a,$a0 ; ..rrrr..
-	fcb $0a,$a0 ; ..rrrr..
-	fcb $02,$80 ; ...rr...
+	fcb $02,$00 ; ...R....
+	fcb $20,$80 ; .R..R...
+	fcb $08,$80 ; ..R.R...
+	fcb $20,$08 ; .R....R.
+	fcb $28,$a0 ; .RR.RR..
+	fcb $0a,$a0 ; ..RRRR..
+	fcb $0a,$a0 ; ..RRRR..
+	fcb $02,$80 ; ...RR...
