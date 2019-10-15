@@ -23,7 +23,6 @@ SAM	equ $ffc0
 ; References to Color Basic ROM APIs
 RSTFLG	equ $71
 RSTVEC	equ $72
-POTVAL	equ $15a
 
 *** SEGMENT 1 ***
 
@@ -31,7 +30,7 @@ POTVAL	equ $15a
 
 	setdp 0
 
-monsterptr rmb 2 ; pointer to current monster locations
+monsterptr rmb 2 ; pointer to current player's monster locations
 portaloff rmb 1 ; nonzero means portals are currently disabled
 V03	rmb 2
 V05	rmb 2
@@ -59,8 +58,8 @@ V8E	rmb 1
 randseed rmb 1 ; the "random seed"
 mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
-curposx	rmb 2 ; current player horizontal screen position
-curposy	rmb 2 ; current player vertical screen position
+curposx	rmb 1 ; current player horizontal screen position
+curposy	rmb 1 ; current player vertical screen position
 tcoord	rmb 1
 renderscr rmb 2
 endclear rmb 1 ; lowest address (highest location on screen) to clear
@@ -105,6 +104,7 @@ objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 1
 VFA	rmb 1
+POTVAL	rmb 4	; joystick values
  IFDEF MLASER
 sptr rmb 2
  ENDC
@@ -269,16 +269,18 @@ LC070	pshs a			; save top coordinate
 	rorb
 	addd renderscr		; add to base screen address
 	exg d,x			; put into pointer and get back pixel mask and counter
+
 LC091	sta ,x			; set pixel for line
 	leax $20,x		; move to next row
 	decb			; done last pixel?
-	;bne LC091		; brif not
+	;bne LC091		; brif not FIXED BUG!
 	bpl LC091
+
 	rts
 
 LC09A	fcb $40,$10,$04,$01	; pixel masks for maze walls (color #1)
 
-drawhoriz	leau LC36A,pcr	; point to short circuit offsets for horizontal drawing
+drawhoriz leau LC36A,pcr	; point to short circuit offsets for horizontal drawing
 	ldd mazeoffy		; get vertical offset of screen
 	bge LC0A9		; brif valid coordinate
 	ldd #0			; minimize to 0
@@ -357,6 +359,7 @@ LC105	pshs a			; save left coordinate
 	anda #3			; get pixel number in byte
 	lda a,y			; get pixel mask
 	pshs a			; save pixel mask
+
 LC125	decb			; are we done yet?
 	blt LC148		; brif so
 	lda ,s			; get pixel mask
@@ -375,6 +378,7 @@ LC140	addb #4			; reset for subb above
 	lda #$40		; set up for leftmost pixel in byte
 	sta ,s			; set pixel masks
 	bra LC125		; go complete the line
+
 LC148	puls a			; clean up stack
 	rts
 
@@ -430,8 +434,6 @@ explosion4
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
-
-; one byte is 8 bits, 2 bits per pixel, so one byte is 4 pixels, each sprite is 8x8 so 8x2 bytes = 16 bytes
 
 ; digit glyphs; this is used as a pointer to digit #2 simply because
 ; the A,r indexing mode is signed and digits 8 and 9 wouldn't be
