@@ -58,8 +58,8 @@ V8E	rmb 1
 randseed rmb 1 ; the "random seed"
 mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
-curposx	rmb 1 ; current player horizontal screen position
-curposy	rmb 1 ; current player vertical screen position
+curposx	rmb 2 ; current player horizontal screen position
+curposy	rmb 2 ; current player vertical screen position
 tcoord	rmb 1
 renderscr rmb 2
 endclear rmb 1 ; lowest address (highest location on screen) to clear
@@ -103,8 +103,9 @@ texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 1
-VFA	rmb 1
-POTVAL	rmb 4	; joystick values
+VFA	rmb 1 ; ???
+POTVAL	rmb 4 ; joystick values
+
  IFDEF MLASER
 sptr rmb 2
  ENDC
