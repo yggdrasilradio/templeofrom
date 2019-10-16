@@ -105,6 +105,7 @@ curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 1
 VFA	rmb 1 ; ???
 POTVAL	rmb 4 ; joystick values
+temp	rmb 1
 
  IFDEF MLASER
 sptr rmb 2
@@ -359,15 +360,15 @@ LC105	pshs a			; save left coordinate
 	leay LC09A,pcr		; point to pixel masks
 	anda #3			; get pixel number in byte
 	lda a,y			; get pixel mask
-	pshs a			; save pixel mask
+	sta temp
 
 LC125	decb			; are we done yet?
 	blt LC148		; brif so
-	lda ,s			; get pixel mask
+	lda temp
 	ora ,x			; merge with screen data
 	sta ,x			; save on screen
-	lsr ,s			; shift pixel mask to next pixel
-	lsr ,s
+	lsr temp
+	lsr temp
 	bne LC125		; brif we haven't got to the end of the byte
 	leax 1,x		; move to next byte
 	lda #$55		; set up to do whole bytes
@@ -377,11 +378,10 @@ LC138	subb #4			; do we have a whole byte worth?
 	bra LC138		; try again
 LC140	addb #4			; reset for subb above
 	lda #$40		; set up for leftmost pixel in byte
-	sta ,s			; set pixel masks
+	sta temp		; set pixel masks
 	bra LC125		; go complete the line
 
-LC148	puls a			; clean up stack
-	rts
+LC148	rts
 
 ; 00 black
 ; 01 blue
@@ -1876,13 +1876,13 @@ LD9EF	ldd VF9
 	bra LDA08
 LDA02	lbsr LDB37
 	lbsr LDB37
-LDA08	leau LDACF,pcr
-	ldb VFA
+LDA08	leau LDACF,pcr	; first bat sprite
+	ldb VFA		; flap the bat's wings
 	eorb #1
 	stb VFA
 	andb #1
 	beq LDA19
-	leau $10,u
+	leau $10,u	; second bat sprite
 LDA19	ldd V52
 	subd mazeoffy
 	cmpd #2
