@@ -102,8 +102,8 @@ scoreptr	rmb 2 ; pointer to current player's score
 texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
-VF9	rmb 1
-VFA	rmb 1 ; ???
+VF9	rmb 2
+VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
 
@@ -807,7 +807,7 @@ LD0CD	bsr LD0EE		; run game loop for player one
 LD0D8	rts
 
 setstartpos	pshs a,b	; save registers
-	ldd #62*256+46		; default screen position (62,46)
+	ldd #62*256+46		; starting player position (62,46)
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
 	ldd #398		; set starting screen position (X)
