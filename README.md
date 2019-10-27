@@ -24,3 +24,5 @@ Split into separate source files.
 Deciphered maze, monster, portal and treasure data formats.
 
 Added one more spider as a test.
+
+Added utility to generate maze data from a graphic
