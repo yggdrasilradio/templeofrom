@@ -53,7 +53,7 @@ LC36A	fdb horscr0-LC36A
 	fdb horscr14-LC36A
 	fdb horscr15-LC36A
 
-; This is the beginning of the map data.
+***
 vertscr0 fcb 1,148,158
 	fcb 1,176,188
 	fcb 2,50,63
@@ -889,4 +889,6 @@ horscr11 fcb 176,97,120
 horscr12
 horscr13
 horscr14
-horscr15 fcb 0		; mark end of horizontal lines table
+horscr15
+***
+	fcb 0		; mark end of horizontal lines table

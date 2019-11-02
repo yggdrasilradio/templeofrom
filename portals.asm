@@ -1,3 +1,24 @@
+
+; Inactive portal graphic
+LDF0A	fdb %0000010101000000 ; ..BBB...
+	fdb %0001000000010000 ; .B...B..
+	fdb %0100000000000100 ; B.....B.
+	fdb %0100000000000100 ; B.....B.
+	fdb %0100000000000100 ; B.....B.
+	fdb %0001000000010000 ; .B...B..
+	fdb %0000010101000000 ; ..BBB...
+	fdb %0000000000000000 ; ........
+
+; Active portal graphic
+LDF1A	fdb %0000010101000000 ; ..BBB...
+	fdb %0001000000010000 ; .B...B..
+	fdb %0100000000000100 ; B.....B.
+	fdb %0100001100000100 ; B..W..B.
+	fdb %0100000000000100 ; B.....B.
+	fdb %0001000000010000 ; .B...B..
+	fdb %0000010101000000 ; ..BBB...
+	fdb %0000000000000000 ; ........
+
 ; Portal list; each entry consists of:
 ; X coordinate (16 bits)
 ; Y coordinate (16 bits)

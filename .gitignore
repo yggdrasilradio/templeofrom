@@ -3,5 +3,6 @@
 *.bin
 *.lst
 *.swp
+map/*.asm
 cfg
 backups

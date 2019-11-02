@@ -7,6 +7,7 @@
 ; Coordinates are 16 bits divided by 4 and stored in 8 bits
 
 LDD23
+***
 	fcb $57,$65,$63,$75,$00
 	fcb $03,$10,$02,$10,$20 ; fireball in queen's bedroom
 	fcb $20,$2d,$02,$10,$20 ; fireball in king's bedroom
@@ -27,6 +28,7 @@ LDD23
 	fcb $61,$78,$9d,$aa,$00 ; NEW spider in room just above next room
 	fcb $61,$78,$b0,$bd,$00 ; spider at center bottom of maze
 	fcb $b8,$d4,$83,$a5,$20 ; fireball at lower right
+***
 	fcb $00,$00		; mark end of table
 
 LDD84	fcb $20,$08 ; .R....R.	2 spider sprites 8x8

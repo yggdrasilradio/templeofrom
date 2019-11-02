@@ -544,7 +544,12 @@ fontdata fcb $f0,$5f,$17,$80		; A
 
 	fcb $00,$00,$00,$00		; space
 
+ IFDEF MCUSTOM
+ include map/lines.asm
+ ELSE
  include lines.asm
+ ENDC
+
 
 *** SEGMENT 2 ***
 
@@ -806,13 +811,13 @@ LD0CD	bsr LD0EE		; run game loop for player one
 	lbsr LD156		; run game loop for player two
 LD0D8	rts
 
-setstartpos	pshs a,b	; save registers
-	ldd #62*256+46		; starting player position (62,46)
+setstartpos pshs a,b		; save registers
+	ldd #62*256+46		; starting player position (62, 46) (center of screen minus 2)
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
-	ldd #398		; set starting screen position (X)
+	ldd #398		; set starting screen position (X) entry point - 128/2 + 2
 	std mazeoffx
-	ldd #291		; set starting screen position (Y)
+	ldd #291		; set starting screen position (Y) entry point - 96/2 + 2
 	std mazeoffy
 	puls a,b,pc		; restore registers and return
 
@@ -1642,7 +1647,11 @@ LD6DD	ldd ,y++		; get coordinates
 	bra LD6DD		; go see if there's another of this treasure type
 LD6E9	rts
 
-	include treasures.asm
+ IFDEF MCUSTOM
+ include map/treasures.asm
+ ELSE
+ include treasures.asm
+ ENDC
 
 LD829	lda curposy
 	ldb curposx
@@ -2263,7 +2272,11 @@ LDD08	lda #$ff
 	std V8D
 	rts
 
-	include monsters.asm
+ IFDEF MCUSTOM
+ include map/monsters.asm
+ ELSE
+ include monsters.asm
+ ENDC
 
 ; Render an 8x5 bitmap at coordinates (B,A).
 draw8x5	pshs b,a		; save the render coordinates
@@ -2438,26 +2451,6 @@ LDEB0	lda VD8			; get Y render coordinate
 	lbra LDE76		; go render another portal (this feels buggy)
 
 LDF09	rts
-
-; Inactive portal graphic
-LDF0A	fdb %0000010101000000
-	fdb %0001000000010000
-	fdb %0100000000000100
-	fdb %0100000000000100
-	fdb %0100000000000100
-	fdb %0001000000010000
-	fdb %0000010101000000
-	fdb %0000000000000000
-
-; Active portal graphic
-LDF1A	fdb %0000010101000000
-	fdb %0001000000010000
-	fdb %0100000000000100
-	fdb %0100001100000100
-	fdb %0100000000000100
-	fdb %0001000000010000
-	fdb %0000010101000000
-	fdb %0000000000000000
 
 	include portals.asm
 

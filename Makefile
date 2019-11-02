@@ -7,6 +7,13 @@ ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
 endif
 
+custom:
+	(cd map; ./map.py)
+	lwasm -9 -b -o -DMCUSTOM temple.bin main.asm
+ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
+	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
+endif
+
 laser:
 	lwasm -9 -b -o -DMLASER temple.bin main.asm
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
