@@ -1,11 +1,10 @@
-Temple of ROM II
+Temple of ROM
 ==========
 
 Starting from a disassembly of a Temple of ROM cart by William Astle, I've managed to build the game successfully.
 I'm hoping to expand the game by adding new features:
 
 * Expand level?
-* More levels?
 * More monsters?
 * Different monsters?
 * Doors and keys?
