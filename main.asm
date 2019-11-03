@@ -10,6 +10,12 @@
 ; 1C00		explosion sprite queue
 ; 2000		code
 
+ IFDEF MCUSTOM
+ include map/geometry.asm
+ ELSE
+ include geometry.asm
+ ENDC
+
 PIA0.DA	equ $ff00
 PIA0.CA	equ $ff01
 PIA0.DB	equ $ff02
@@ -815,9 +821,11 @@ setstartpos pshs a,b		; save registers
 	ldd #62*256+46		; starting player position (62, 46) (center of screen minus 2)
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
-	ldd #398		; set starting screen position (X) entry point - 128/2 + 2
+*	ldd #398		; set starting screen position (X) entry point - 128/2 + 2	geometry
+	ldd #STARTX		; set starting screen position (X) entry point - 128/2 + 2	geometry
 	std mazeoffx
-	ldd #291		; set starting screen position (Y) entry point - 96/2 + 2
+*	ldd #291		; set starting screen position (Y) entry point - 96/2 + 2	geometry
+	ldd #STARTY		; set starting screen position (Y) entry point - 96/2 + 2	geometry
 	std mazeoffy
 	puls a,b,pc		; restore registers and return
 
@@ -1841,7 +1849,8 @@ LD99A	dec ,s			; decrement iteration count
 	std mazeoffy		; save new screen offset
 	ldd mazeoffx		; get X offset for screen
 	addd scrollstep		; add in step
-	cmpd #$336		; did we fall off the bottom right?
+*	cmpd #$336		; did we fall off the bottom right?	geometry
+	cmpd #MAXSCROLL		; did we fall off the bottom right?	geometry
 	blt LD9C7		; brif not
 	pshs b,a		; save registers
 	clra			; set up to negate the the scroll direction
@@ -1849,7 +1858,8 @@ LD99A	dec ,s			; decrement iteration count
 	subd scrollstep		; subtract current step from 0 (negates it)
 	std scrollstep		; save new scroll step/direction
 	puls b,a		; restore registers
-LD9C7	cmpd #$5d		; did we fall off the top left?
+*LD9C7	cmpd #$5d		; did we fall off the top left?		geometry
+LD9C7	cmpd #MINSCROLL		; did we fall off the top left?		geometry
 	bgt LD9D7		; brif not
 	pshs b,a		; save registers
 	clra			; set up to negate the scroll direction

@@ -77,6 +77,9 @@ CYAN = pix[7, 0]
 width = img.size[0]
 height = img.size[1]
 
+maxx = 0
+minx = 9000
+
 # Generate lines.asm
 r = '* vertical lines\n'
 r = r + 'vertscr0\n'
@@ -89,6 +92,10 @@ for x in range(4, width - 1):
 		color = pix[x, y]
 		if color == BLUE and flag == 0:
 			# start of line
+			if x > maxx:
+				maxx = x
+			if x < minx:
+				minx = x
 			flag = 1
 			x1 = x
 			y1 = y
@@ -215,3 +222,20 @@ data[1] += r
 
 with open('monsters.asm', 'w') as file:
 	file.write("".join(data))
+
+# Generate geometry.asm
+r = ''
+for x in range(4, width - 1):
+	for y in range(4, height - 1):
+		color = pix[x, y]
+		if color == WHITE:
+			# found object
+			objid = objectid(x, y)
+			if objid == ENTRYPOINT:
+				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
+				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
+				r += 'MINSCROLL equ ' + str(minx + 89) + '\n'
+				r += 'MAXSCROLL equ ' + str(maxx - 134) + '\n'
+
+with open('geometry.asm', 'w') as file:
+	file.write(r)
