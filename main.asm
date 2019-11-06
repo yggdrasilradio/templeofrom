@@ -678,7 +678,7 @@ LCF94	lbsr LD531
 	ldu #plr2monsters	; point to player two's monster locations
 	lbsr LDCE6		; set default locations
 
-	lbsr setstartpos	; set default start	geometry
+	lbsr setstartpos	; set default attract mode scrolling start
 	pshs d
 	ldd #MINX+((MAXX-MINX)/2)-(128/2)
 	std mazeoffx
@@ -829,11 +829,9 @@ setstartpos pshs a,b		; save registers
 	ldd #62*256+46		; starting player position (62, 46) (center of screen minus 2)
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
-*	ldd #398		; set starting screen position (X) entry point - 128/2 + 2	geometry
-	ldd #STARTX		; set starting screen position (X) entry point - 128/2 + 2	geometry
+	ldd #STARTX		; set player position (X) entry point
 	std mazeoffx
-*	ldd #291		; set starting screen position (Y) entry point - 96/2 + 2	geometry
-	ldd #STARTY		; set starting screen position (Y) entry point - 96/2 + 2	geometry
+	ldd #STARTY		; set player position (Y) entry point
 	std mazeoffy
 	puls a,b,pc		; restore registers and return
 
@@ -1844,7 +1842,7 @@ LD98A	leas 5,s		; clear temporaries
 	rts
 
 scrolllong	lda #120	; do 120 iterations
-scrollmaze	pshs a		; save the interation count
+scrollmaze	pshs a		; save the iteration count
 LD99A	dec ,s			; decrement iteration count
 	beq LD9E6		; brif we're done with all the iterations
 	lbsr checkcssel		; check colour set selection keys
@@ -1854,36 +1852,35 @@ LD99A	dec ,s			; decrement iteration count
 	lbsr drawhoriz
 
 * ATTRACT MODE SCROLL
-	ldd mazeoffy		; get Y offset for screen
-	addd scrollstep		; add in step
-	*cmpd #MAXY-96 ??
-	*bhi rev1 ??
-	*cmpd #MINY ??
-	*blo rev1 ??
-	std mazeoffy		; save new screen offset
 	ldd mazeoffx		; get X offset for screen
 	addd scrollstep		; add in step
-	cmpd #MAXX-MINX-128	; did we fall off the bottom right?	geometry
-	blo LD9C7		; brif not / continue scrolling
-rev1
-	pshs b,a		; save registers
-	clra			; set up to negate the the scroll direction
-	clrb
-	subd scrollstep		; subtract current step from 0 (negates it)
-	std scrollstep		; save new scroll step/direction
-	puls b,a		; restore registers
-LD9C7	cmpd #MINX		; did we fall off the top left?		geometry
-	bgt LD9D7		; brif not / continue scrolling
-rev2
-	pshs b,a		; save registers
+	std mazeoffx		; save new screen offset
+	ldd mazeoffy		; get Y offset for screen
+	addd scrollstep		; add in step
+	std mazeoffy		; save new screen offset
+
+	ldd mazeoffx
+	cmpd #MAXX-128		; did we pass the right edge?
+	bhs reverse		; brif not / continue scrolling
+	cmpd #MINX		; did we pass the left edge?
+	blo reverse		; brif not / continue scrolling
+
+	ldd mazeoffy
+	cmpd #MAXY-96		; did we pass the bottom edge?
+	bhs reverse		; brif not / continue scrolling
+	cmpd #MINY		; did we pass the top edge?
+	blo reverse		; brif not / continue scrolling
+	bra LD9D7
+
+reverse
+	pshs d			; save registers
 	clra			; set up to negate the scroll direction
 	clrb
 	subd scrollstep		; subtract scroll step from 0 (negate it)
 	std scrollstep		; save new step/direction
-	puls b,a		; restore registers
-LD9D7	std mazeoffx		; save new screen offset (X)
+	puls d			; restore registers
 
-	ldb PIA0.DA		; read keyboard rows
+LD9D7	ldb PIA0.DA		; read keyboard rows
 	andb #3			; keep joystick buttons
 	eorb #3			; set so nonzero means pressed
 	beq LD99A		; brif no buttons pressed - do another iteration
