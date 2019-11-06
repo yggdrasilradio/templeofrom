@@ -677,7 +677,15 @@ LCF94	lbsr LD531
 	lbsr LDCE6		; set default locations
 	ldu #plr2monsters	; point to player two's monster locations
 	lbsr LDCE6		; set default locations
-	lbsr setstartpos	; set default start versions
+
+	lbsr setstartpos	; set default start	geometry
+	pshs d
+	ldd #MINX+((MAXX-MINX)/2)-(128/2)
+	std mazeoffx
+	ldd #MINY+((MAXY-MINY)/2)-(96/2)
+	std mazeoffy
+	puls d
+
 	clr VD7
 	ldd #1			; set scroll direction to down-right
 	std scrollstep
@@ -1745,7 +1753,7 @@ LD8BF	leau 4,u
 	lbsr buildobjlist
 	ldu monsterptr
 	lbsr LDCE6
-	lbsr setstartpos
+	lbsr setstartpos	; starting position for start of turn
 	lbsr LDFD7
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49
@@ -1844,23 +1852,29 @@ LD99A	dec ,s			; decrement iteration count
 	lbsr clearrender	; get a clear canvas
 	lbsr drawvert
 	lbsr drawhoriz
+
+* ATTRACT MODE SCROLL
 	ldd mazeoffy		; get Y offset for screen
 	addd scrollstep		; add in step
+	*cmpd #MAXY-96 ??
+	*bhi rev1 ??
+	*cmpd #MINY ??
+	*blo rev1 ??
 	std mazeoffy		; save new screen offset
 	ldd mazeoffx		; get X offset for screen
 	addd scrollstep		; add in step
-*	cmpd #$336		; did we fall off the bottom right?	geometry
-	cmpd #MAXSCROLL		; did we fall off the bottom right?	geometry
-	blt LD9C7		; brif not
+	cmpd #MAXX-MINX-128	; did we fall off the bottom right?	geometry
+	blo LD9C7		; brif not / continue scrolling
+rev1
 	pshs b,a		; save registers
 	clra			; set up to negate the the scroll direction
 	clrb
 	subd scrollstep		; subtract current step from 0 (negates it)
 	std scrollstep		; save new scroll step/direction
 	puls b,a		; restore registers
-*LD9C7	cmpd #$5d		; did we fall off the top left?		geometry
-LD9C7	cmpd #MINSCROLL		; did we fall off the top left?		geometry
-	bgt LD9D7		; brif not
+LD9C7	cmpd #MINX		; did we fall off the top left?		geometry
+	bgt LD9D7		; brif not / continue scrolling
+rev2
 	pshs b,a		; save registers
 	clra			; set up to negate the scroll direction
 	clrb
@@ -1868,6 +1882,7 @@ LD9C7	cmpd #MINSCROLL		; did we fall off the top left?		geometry
 	std scrollstep		; save new step/direction
 	puls b,a		; restore registers
 LD9D7	std mazeoffx		; save new screen offset (X)
+
 	ldb PIA0.DA		; read keyboard rows
 	andb #3			; keep joystick buttons
 	eorb #3			; set so nonzero means pressed

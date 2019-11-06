@@ -79,6 +79,8 @@ height = img.size[1]
 
 maxx = 0
 minx = 9000
+maxy = 0
+miny = 9000
 
 # Generate lines.asm
 r = '* vertical lines\n'
@@ -116,6 +118,10 @@ for y in range(4, height - 1):
 		color = pix[x, y]
 		if color == BLUE and flag == 0:
 			# start of line
+			if y > maxy:
+				maxy = y
+			if y < miny:
+				miny = y
 			flag = 1
 			x1 = x
 			y1 = y
@@ -234,8 +240,12 @@ for x in range(4, width - 1):
 			if objid == ENTRYPOINT:
 				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
 				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
-				r += 'MINSCROLL equ ' + str(minx + 89) + '\n'
-				r += 'MAXSCROLL equ ' + str(maxx - 134) + '\n'
+				#r += 'MINSCROLL equ ' + str(minx + 89) + '\n'
+				#r += 'MAXSCROLL equ ' + str(maxx - 134) + '\n'
+				r += 'MINX equ ' + str(minx) + '\n'
+				r += 'MAXX equ ' + str(maxx) + '\n'
+				r += 'MINY equ ' + str(miny) + '\n'
+				r += 'MAXY equ ' + str(maxy) + '\n'
 
 with open('geometry.asm', 'w') as file:
 	file.write(r)
