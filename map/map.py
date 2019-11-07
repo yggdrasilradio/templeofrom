@@ -85,7 +85,7 @@ miny = 9000
 # Generate lines.asm
 r = '* vertical lines\n'
 r = r + 'vertscr0\n'
-for x in range(4, width - 1):
+for x in range(4, width - 1, 4):
 	flag = 0
 	if x % 64 == 0:
 		col = x / 4 + 1
@@ -109,7 +109,7 @@ r = r + ' fcb 0\n\n'
 
 r = r + '* horizontal lines' + '\n'
 r = r + 'horscr0' + '\n'
-for y in range(4, height - 1):
+for y in range(4, height - 1, 4):
 	flag = 0
 	if y % 64 == 0:
 		col = y / 4 + 1
@@ -159,8 +159,8 @@ cup = ''
 goblet = ''
 pitcher = ''
 ball = ''
-for x in range(4, width - 1):
-	for y in range(4, height - 1):
+for x in range(4, width - 1, 4):
+	for y in range(4, height - 1, 4):
 		color = pix[x, y]
 		if color == WHITE:
 			# found object
@@ -197,8 +197,8 @@ with open('treasures.asm', 'w') as file:
 
 # Generate monsters.asm
 r = ''
-for x in range(4, width - 1):
-	for y in range(4, height - 1):
+for x in range(4, width - 1, 4):
+	for y in range(4, height - 1, 4):
 		color = pix[x, y]
 		if color == WHITE:
 			# found object
