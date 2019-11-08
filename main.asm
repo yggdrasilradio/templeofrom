@@ -112,6 +112,7 @@ VF9	rmb 2
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
+tick	rmb 1
 
  IFDEF MLASER
 sptr rmb 2
@@ -574,23 +575,11 @@ random	pshs a			; save registers
 	rts
 
 ; Wait for VSYNC
-
 WaitVSYNC
-  pshs a
-  lda #0
-  sta $ff9a
 	tst PIA0.DB	; dismiss interrupt 
 LCF0B	tst PIA0.CB	; wait for interrupt
 	bge LCF0B
-  lda #100
-  sta $ff9a
-  puls a,pc
-
-;WaitVSYNC
-;	tst PIA0.DB	; dismiss interrupt 
-;LCF0B	tst PIA0.CB	; wait for interrupt
-;	bge LCF0B
-;	rts
+	rts
 
 ; Clear screen one header (to colour #3)
 clrheader pshs y,x,b,a		; save registers
@@ -645,6 +634,18 @@ LCF50	nop			; flag for valid warm start routine
 	lda #$f8		; code for 2 colour 256px graphics, colour set 1
 	sta PIA1.DB		; set VDG graphics mode
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
+
+	* init VSYNC interrupt
+	leau IRQ,pcr		; IRQ interrupt vector
+	stu $10d
+	lda $ff01		; turn off HSYNC
+	anda #$fe
+	sta $ff01
+	lda $ff03		; turn on VSYNC
+	ora #$01
+	sta $ff03
+	andcc #%10111111	; start VSYNC interrupt on IRQ
+
  IFDEF MLASER
 	lbsr InitLaser
  ENDC
@@ -1209,43 +1210,26 @@ LD3C5	ldu renderscr		; get start address of render screen
 	clrb
 	ldx #0
 	ldy #0
+
+LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
  IFNDEF MLASER
-	sts VBF			; save stack pointer
-	lds #0			; use S for clearing too
-LD3DB	pshu s,y,x,dp,b,a	; 9 bytes x 1 = 9 bytes
 	lda VD7
 	sta PIA1.DA		; tikkatikkatikka sound
 	clra
-	pshu s,y,x,dp,b,a	; 9 bytes x 7 = 63 bytes
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
+ ENDC
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+ IFNDEF MLASER
 	clr PIA1.DA		; tikkatikkatikka sound
-	pshu s,y,x,dp,b,a	; 9 bytes x 6 = 56 bytes
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu b,a		; 2 bytes x 1 = 2 bytes
-	cmpu endclear		; have we reached the start of the screen?
-	bgt LD3DB		; brif not, do another 128 bytes
-	lds VBF			; restore stack pointer
- ELSE
-LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
+ ENDC
 	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
@@ -1868,7 +1852,7 @@ LD99A	dec ,s			; decrement iteration count
 	ldd mazeoffy
 	cmpd #MAXY-96		; did we pass the bottom edge?
 	bhs reverse		; brif not / continue scrolling
-	cmpd #MINY		; did we pass the top edge?
+	cmpd #MINY-4		; did we pass the top edge?
 	blo reverse		; brif not / continue scrolling
 	bra LD9D7
 
@@ -2580,6 +2564,16 @@ LDFE6	ldb ,u			; get current VDG mode
 	puls a			; get back original VDG settings
 	sta ,u			; restore VDG mode
 	puls pc,u,b,a		; restore registers and return
+
+IRQ
+	orcc #%01010000		; disable both IRQ/FIRQ until we service IRQ
+	tst $ff02		; clear interrupt
+	lda tick
+	beq IRQ2
+	dec tick
+IRQ2
+	andcc #%10101111 	; re-enable interrupts ???
+	rti
 
  IFDEF MLASER
 	include laser.asm
