@@ -2572,7 +2572,7 @@ IRQ
 	beq IRQ2
 	dec tick
 IRQ2
-	andcc #%10101111 	; re-enable interrupts ???
+	andcc #%10111111	; re-enable IRQ
 	rti
 
  IFDEF MLASER
