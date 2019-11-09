@@ -576,10 +576,12 @@ random	pshs a			; save registers
 
 ; Wait for VSYNC
 WaitVSYNC
-	tst PIA0.DB	; dismiss interrupt 
-LCF0B	tst PIA0.CB	; wait for interrupt
-	bge LCF0B
-	rts
+	pshs a
+loop@	lda tick
+	bne loop@
+	lda #6
+	sta tick
+	puls a,pc
 
 ; Clear screen one header (to colour #3)
 clrheader pshs y,x,b,a		; save registers
@@ -636,15 +638,16 @@ LCF50	nop			; flag for valid warm start routine
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
 
 	* init VSYNC interrupt
+	clr tick
 	leau IRQ,pcr		; IRQ interrupt vector
 	stu $10d
-	lda $ff01		; turn off HSYNC
+	lda PIA0.CA		; turn off HSYNC
 	anda #$fe
-	sta $ff01
-	lda $ff03		; turn on VSYNC
+	sta PIA0.CA
+	lda PIA0.CB		; turn on VSYNC
 	ora #$01
-	sta $ff03
-	andcc #%10111111	; start VSYNC interrupt on IRQ
+	sta PIA0.CB
+	andcc #%11101111	; start VSYNC interrupt on IRQ
 
  IFDEF MLASER
 	lbsr InitLaser
@@ -2565,15 +2568,11 @@ LDFE6	ldb ,u			; get current VDG mode
 	sta ,u			; restore VDG mode
 	puls pc,u,b,a		; restore registers and return
 
-IRQ
-	orcc #%01010000		; disable both IRQ/FIRQ until we service IRQ
-	tst $ff02		; clear interrupt
+IRQ	lda PIA0.DB		; clear interrupt
 	lda tick
-	beq IRQ2
+	beq IRQ@
 	dec tick
-IRQ2
-	andcc #%10111111	; re-enable IRQ
-	rti
+IRQ@	rti
 
  IFDEF MLASER
 	include laser.asm
