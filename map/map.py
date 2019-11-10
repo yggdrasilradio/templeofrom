@@ -36,6 +36,7 @@ def hout(x1, y, x2):
 			r = r + ' fcb ' + str(y) + ',' + str(x1 + 2 * delta) + ',' + str(x2) + '\n'
 		else:
 			r = r + '*ERROR\n'
+			print "HORIZ SEGMENTING ERROR"
 
 def vout(y1, x, y2):
 	global r
@@ -60,6 +61,7 @@ def vout(y1, x, y2):
 			r = r + ' fcb ' + str(y1 + 2 * delta) + ',' + str(x) + ',' + str(y2) + '\n'
 		else:
 			r = r + '*ERROR\n'
+			print "VERT SEGMENTING ERROR"
 
 
 img = Image.open('map.gif')
@@ -180,17 +182,20 @@ for x in range(4, width - 1, 4):
 				pitcher = pitcher + s
 			elif objid == BALL:
 				ball = ball + s
+			else:
+				if objid <> SPIDER and objid <> FIREBALL and objid <> PORTAL and objid <> ENTRYPOINT: 
+					print "UNKNOWN OBJECT " + str(objid) + ' at ' + str(x) + ', ' + str(y)
 
 with open('../treasures.asm', 'r') as file:
 	data = file.read().split('***')
 
-data[1] += cross
-data[3] += ring
-data[5] += cup
-data[7] += ball
-data[9] += goblet
-data[11] += pitcher
-data[13] += crown
+data[1] = cross
+data[3] = ring
+data[5] = cup
+data[7] = ball
+data[9] = goblet
+data[11] = pitcher
+data[13] = crown
 
 with open('treasures.asm', 'w') as file:
 	file.write("".join(data))
@@ -224,7 +229,7 @@ for x in range(4, width - 1, 4):
 with open('../monsters.asm', 'r') as file:
 	data = file.read().split('***')
 
-data[1] += r
+data[1] = r
 
 with open('monsters.asm', 'w') as file:
 	file.write("".join(data))
@@ -240,8 +245,6 @@ for x in range(4, width - 1):
 			if objid == ENTRYPOINT:
 				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
 				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
-				#r += 'MINSCROLL equ ' + str(minx + 89) + '\n'
-				#r += 'MAXSCROLL equ ' + str(maxx - 134) + '\n'
 				r += 'MINX equ ' + str(minx) + '\n'
 				r += 'MAXX equ ' + str(maxx) + '\n'
 				r += 'MINY equ ' + str(miny) + '\n'
