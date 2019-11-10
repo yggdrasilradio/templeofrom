@@ -579,8 +579,9 @@ WaitVSYNC
 	pshs a
 loop@	lda tick
 	bne loop@
-	lda #6
+	lda #5
 	sta tick
+	sync
 	puls a,pc
 
 ; Clear screen one header (to colour #3)
@@ -1744,20 +1745,20 @@ LD8BF	leau 4,u
 	lbsr LCD49
 LD8E4	rts
 
-swaprender ldd renderscr	; get start address of current render screen
+swaprender
+	lbsr WaitVSYNC		; wait for VSYNC
+	ldd renderscr		; get start address of current render screen
 	cmpd #SCREEN1		; screen number 1?
 	bne LD8FD		; brif not
-	ldd #SCREEN2		; set render address to screen #2
-	std renderscr
-	lbsr WaitVSYNC		; wait for VSYNC
 	sta SAM+9		; set SAM to display screen #1
 	sta SAM+12
-	bra LD90B
-LD8FD	ldd #SCREEN1		; set render address to screen #1
+	ldd #SCREEN2		; set render address to screen #2
 	std renderscr
-	lbsr WaitVSYNC		; wait for VSYNC
-	sta SAM+13		; set SAM to display screen #2
-	sta SAM+8
+	rts
+LD8FD	sta SAM+8		; set SAM to display screen #2
+	sta SAM+13
+	ldd #SCREEN1		; set render address to screen #1
+	std renderscr
 LD90B	rts
 
 ; Render a string at the top of both graphics screens. The string will be centered.
@@ -1812,7 +1813,7 @@ LD961	ldd 3,s			; get render coordinates
 	std 1,s			; save new string pointer
 	lda 4,s			; get rendering X coordinate
 	adda #6			; move to next character cell
-	sta 4,s			; save new X cooredinate
+	sta 4,s			; save new X coordinate
 	bra LD92C		; go render another character
 LD97E	leas 5,s		; clean up temporaries
 	puls b,a		; get back render screen pointer
