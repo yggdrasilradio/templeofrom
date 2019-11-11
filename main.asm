@@ -114,10 +114,6 @@ POTVAL	rmb 4 ; joystick values
 temp	rmb 1
 tick	rmb 1
 
- IFDEF MLASER
-sptr rmb 2
- ENDC
-
 * MASTER MONSTER LIST
 *
 * Each list entry is 9 bytes:
@@ -349,6 +345,9 @@ LC100	leau 2,u		; move to next set of line data
 LC104	rts
 
 * Draw horizontal line
+* A: beginning X coordinate
+* B: ending X coordinate
+* X: Y coordinate
 LC105	pshs a			; save left coordinate
 	exg x,d			; save coordinates and get vertical offset
 	tfr b,a			; put vertical coordinate in A
@@ -363,7 +362,7 @@ LC105	pshs a			; save left coordinate
 	addd renderscr		; add screen base
 	exg d,x			; save pointer and get back coordinates
 	subb ,s+		; calculate number of pixels
-	incb			; add one (compensate for decb below)
+	;incb			; add one (compensate for decb below)
 	leay LC09A,pcr		; point to pixel masks
 	anda #3			; get pixel number in byte
 	lda a,y			; get pixel mask
@@ -474,7 +473,7 @@ plr2mess fcb 10
 	fcc 'PLAYER TWO'
 
 ToRmess	fcb 13
-	fcc 'TEMPLE OF ROM II'
+	fcc 'TEMPLE OF ROM'
 
 gameovermess fcb 9
 	fcc 'GAME OVER'
@@ -650,9 +649,6 @@ LCF50	nop			; flag for valid warm start routine
 	sta PIA0.CB
 	andcc #%11101111	; start VSYNC interrupt on IRQ
 
- IFDEF MLASER
-	lbsr InitLaser
- ENDC
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
 	lbsr Coco3RGB 		; default to RGB no artifacting
@@ -1216,11 +1212,9 @@ LD3C5	ldu renderscr		; get start address of render screen
 	ldy #0
 
 LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
- IFNDEF MLASER
 	lda VD7
 	sta PIA1.DA		; tikkatikkatikka sound
 	clra
- ENDC
 	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
@@ -1231,9 +1225,7 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
- IFNDEF MLASER
 	clr PIA1.DA		; tikkatikkatikka sound
- ENDC
 	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
@@ -1304,9 +1296,6 @@ LD44F	std VCD
 	clrb
 	stb VC8
 	stb VCA
- IFDEF MLASER
-	lbsr FireLaser
- ENDC
 	lda #$f0	; tikkatikkatikka sound
 	sta VD7
 LD474	lda VC9
@@ -2574,9 +2563,5 @@ IRQ	lda PIA0.DB		; clear interrupt
 	beq IRQ@
 	dec tick
 IRQ@	rti
-
- IFDEF MLASER
-	include laser.asm
- ENDC
 
 	end START
