@@ -79,13 +79,22 @@ CYAN = pix[7, 0]	# unused
 width = img.size[0]
 height = img.size[1]
 
+# check for misaligned sprites
+i = 0
+for x in range(4, width - 1):
+	for y in range(4, height - 1):
+		if pix[x, y] == WHITE:
+			if x % 4 <> 0:
+				i = i + 1
+if i <> 0:
+	print "There are " + str(i) + " misaligned sprites"
+
+# Generate lines.asm
+print 'Generating lines.asm'
 maxx = 0
 minx = 9000
 maxy = 0
 miny = 9000
-
-# Generate lines.asm
-print 'Generating lines.asm'
 r = '* vertical lines\n'
 r = r + 'vertscr0\n'
 for x in range(4, width - 1, 4):
@@ -166,7 +175,6 @@ ball = ''
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
-			# found object
 			objid = objectid(x, y)
 			s = ' fcb ' + coord(x) + ',' + coord(y) + '\n'
 			if objid == CROSS:
@@ -207,7 +215,6 @@ r = ''
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
-			# found object
 			objid = objectid(x, y)
 			if objid == SPIDER or objid == FIREBALL:
 				x1 = x
@@ -241,7 +248,6 @@ r = ''
 for x in range(4, width - 1):
 	for y in range(4, height - 1):
 		if pix[x, y] == WHITE:
-			# found object
 			if objectid(x, y) == ENTRYPOINT:
 				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
 				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
@@ -262,7 +268,6 @@ yvalues = []
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x,y] == WHITE:
-			# found object
 			if objectid(x, y) == PORTAL:
 				nportals = nportals + 1
 				xvalues.append(x)
@@ -272,7 +277,6 @@ i = 0
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
-			# found object
 			if objectid(x, y)  == PORTAL:
 				r = r + ' fdb $' + format(x, '04x') + ',$' + format(y, '04x') + '\n'
 				r = r + ' fcb '
