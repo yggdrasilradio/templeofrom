@@ -596,8 +596,7 @@ no@
 
 * Generate random number between zero and A
 rand
-	pshs b
-	pshs a
+	pshs d
 	lbsr lrandom
 	puls a
 	mul
