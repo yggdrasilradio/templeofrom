@@ -18,7 +18,7 @@ run:
 	mame coco2b -flop1 /media/share1/COCO/drive0.dsk -ramsize 512k -ui_active -skip_gameinfo -autoboot_delay 1 -autoboot_command 'LOADM"TEMPLE.BIN":EXEC\n'
 
 clean:
-	rm -f *.bin *.zip *.lst map/*.asm
+	rm -f *.bin *.zip *.lst map/*.asm *.swp
 
 backup:
 	tar -cvf backups/`date +%Y-%m-%d_%H-%M-%S`.tar Makefile *.asm
