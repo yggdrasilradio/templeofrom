@@ -61,7 +61,7 @@ V68	rmb 1
 V69	rmb 1
 V8D	rmb 1
 V8E	rmb 1
-randseed rmb 1 ; the "random seed"
+randseed rmb 2 ; the "random seed"
 mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
 curposx	rmb 2 ; current player horizontal screen position
@@ -563,7 +563,7 @@ LCD46	lbra LCF50
 
 	include music.asm
 
-; This generates a pseudo random sequence with period 128.
+; This generates a pseudo random sequence with period 128 in B
 random	pshs a			; save registers
 	lda randseed		; get current random seed
 	ldb #123		; get fudge factor
@@ -572,6 +572,36 @@ random	pshs a			; save registers
 	stb randseed		; save new random seed (and result)
 	puls a			; restore registers
 	rts
+
+* Better random routine from Steve Bjork
+lrandom
+	clr  ,-s	; clear holder of LFSB
+	lda randseed    ; get high byte of 16-bit random seed
+	anda #%10110100	; get the bits check in shifting
+	ldb #6		; use the top 6 bits for xoring
+loop@
+	lsla            ; move top bit into the carry flag
+	bcc no@		; skip incing the LFSB if no carry
+	inc ,s		; add one to the LFSB test holder
+no@
+	decb            ; count down loop counter
+	bne loop@       ; loop if all bits are not done
+	lda ,s+         ; get LFSB off of stack
+	inca            ; invert lower bit by adding one
+	rora            ; move bit 0 into carry
+	rol randseed+1  ; shift carry into bit 0
+	rol randseed    ; one more shift to complete the 16 bit shift
+	ldd randseed    ; load up a and b with the new random seed
+	rts
+
+* Generate random number between zero and A
+rand
+	pshs b
+	pshs a
+	lbsr lrandom
+	puls a
+	mul
+	puls b,pc
 
 ; Wait for VSYNC
 WaitVSYNC
@@ -648,6 +678,14 @@ LCF50	nop			; flag for valid warm start routine
 	ora #$01
 	sta PIA0.CB
 	andcc #%11101111	; start VSYNC interrupt on IRQ
+
+
+ * Seed random number routine
+ addd $112	; throw in the BASIC timer
+ bne no@	; can't be zero
+ ldd #123
+no@
+ std randseed
 
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
@@ -2376,12 +2414,15 @@ LDE58	lda curposy		; get current vertical coordinate on screen
 	tst portaloff		; are portals active?
 	beq LDE70		; brif so - don't adjust counter
 	inc portaloff		; bump portal disable count (will eventually wrap to 0 and re-enable portals)
-LDE70	leau LDF2A,pcr		; point to portal list
-	leau -12,u		; compensate for leau below (above could use LDF2A-12 instead)
-LDE76	leau 12,u		; move to next item
+
+* CYCLE THROUGH ALL THE PORTALS
+LDE70	leau LDF2A-PTROWLEN,pcr	; point to portal list
+	;leau -12,u		; compensate for leau below (above could use LDF2A-12 instead)
+LDE76	leau PTROWLEN,u		; move to next item
 	ldd ,u			; fetch X coordinate in maze
 	lbeq LDF09		; brif end of table
-	ldd ,u			; fetch X coordinate (redundant)
+* IS IT VISIBLE
+	;ldd ,u			; fetch X coordinate (redundant)
 	subd mazeoffx		; subtract maze display offset
 	cmpd #$fffa		; is it within 6 pixels of left of screen?
 	blt LDE76		; brif not - move to next item
@@ -2394,6 +2435,7 @@ LDE76	leau 12,u		; move to next item
 	blt LDE76		; brif not
 	cmpd #$5f		; is it within the visible area (bottom)?
 	bgt LDE76		; brif not
+* RENDER PORTAL 
 	stb VD8			; save Y coordinate for rendering
 	pshs u			; save portal pointer
 	leau LDF1A,pcr		; point to active portal graphic
@@ -2406,6 +2448,7 @@ LDEB0	lda VD8			; get Y render coordinate
 	puls u			; get back portal pointer
 	tst portaloff		; are portals enabled?
 	bne LDE76		; brif not
+* PORTAL ACTIVATED?
 	lda VD9			; get vertical render location
 	ldb VD8			; get horizontal render location
 	cmpa VDE		; are we below the bottom of the bounding box?
@@ -2416,18 +2459,27 @@ LDEB0	lda VD8			; get Y render coordinate
 	bgt LDE76		; brif so - not activating portal
 	cmpb VDF		; are we to the left of the bounding box?
 	blt LDE76		; brif so - not activating portal
+* GO THROUGH PORTAL
 	lbsr dobleep		; make the portal sound
 	lbsr setstartpos	; reset to start coordinates
 	inc curposx		; bump both coordinates two pixels down and right
 	inc curposx
 	inc curposy
 	inc curposy
-	lbsr random		; get a random value
-	lsrb			; keep bits 1,2
-	andb #3
-	lslb			; double it for two bytes per coordinate pair
-	addb #4			; move past portal location
-	ldd b,u			; fetch portal destination ("random" selection from four choices)
+
+	;lbsr random		; get a random value
+	;lsrb			; keep bits 1,2
+	;andb #3
+	;lslb			; double it for two bytes per coordinate pair
+	;addb #4		; move past portal location
+	;ldd b,u		; fetch portal destination ("random" selection from four choices)
+
+	lda #NPORTALS-1		; choose a random portal destination
+	lbsr rand
+	lsla			; double it for two bytes per coordinate pair
+	adda #4			; move past portal location
+	ldd a,u			; fetch random portal destination
+
 	sta VBF			; save X coordinate
 	clra			; zero extend Y coordinate
 	lslb			; multiply by 4
@@ -2447,11 +2499,15 @@ LDEB0	lda VD8			; get Y render coordinate
 	sbca #0			; propagate carry
 	std mazeoffx		; save new maze display offset
 	inc portaloff		; disable portals
-	lbra LDE76		; go render another portal (this feels buggy)
+	;lbra LDE76		; go render another portal (this feels buggy)
 
 LDF09	rts
 
-	include portals.asm
+ IFDEF MCUSTOM
+ include map/portals.asm
+ ELSE
+ include portals.asm
+ ENDC
 
 drawmazeboth lbsr clearrender	; get a clean render area
 	lbsr drawvert		; draw the vertical lines

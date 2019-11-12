@@ -1,3 +1,8 @@
+NPORTALS equ 5
+***
+
+* Portal table row length
+PTROWLEN equ 4+(2*(NPORTALS-1))
 
 ; Inactive portal graphic
 LDF0A	fdb %0000010101000000 ; ..BBB...
@@ -22,7 +27,7 @@ LDF1A	fdb %0000010101000000 ; ..BBB...
 ; Portal list; each entry consists of:
 ; X coordinate (16 bits)
 ; Y coordinate (16 bits)
-; 4 sets of destination coordinates (in packed divided by four format)
+; sets of destination coordinates (in packed divided by four format) leading to the other portals
 ;   one of which is chosen at "random" when a portal is activated
 LDF2A
 ***

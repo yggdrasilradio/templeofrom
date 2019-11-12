@@ -69,12 +69,12 @@ pix = img.load()
 
 BLACK = pix[0, 0]
 WHITE = pix[1, 0]
-RED = pix[2, 0]
+RED = pix[2, 0]		# unused
 BLUE = pix[3, 0]
 GREEN = pix[4, 0]
-YELLOW = pix[5, 0]
-MAGENTA = pix[6, 0]
-CYAN = pix[7, 0]
+YELLOW = pix[5, 0]	# unused
+MAGENTA = pix[6, 0]	# unused
+CYAN = pix[7, 0]	# unused
 
 width = img.size[0]
 height = img.size[1]
@@ -85,6 +85,7 @@ maxy = 0
 miny = 9000
 
 # Generate lines.asm
+print 'Generating lines.asm'
 r = '* vertical lines\n'
 r = r + 'vertscr0\n'
 for x in range(4, width - 1, 4):
@@ -141,6 +142,8 @@ data[1] = r
 with open('lines.asm', 'w') as file:
 	file.write("".join(data))
 
+# Generate treasures.asm
+print 'Generating treasures.asm'
 CROSS = 5
 ENTRYPOINT = 9
 RING = 10
@@ -153,7 +156,6 @@ GOBLET = 25
 PITCHER = 26
 BALL = 37
 
-# Generate treasures.asm
 cross = ''
 ring = ''
 crown = ''
@@ -163,8 +165,7 @@ pitcher = ''
 ball = ''
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
-		color = pix[x, y]
-		if color == WHITE:
+		if pix[x, y] == WHITE:
 			# found object
 			objid = objectid(x, y)
 			s = ' fcb ' + coord(x) + ',' + coord(y) + '\n'
@@ -201,11 +202,11 @@ with open('treasures.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate monsters.asm
+print 'Generating monsters.asm'
 r = ''
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
-		color = pix[x, y]
-		if color == WHITE:
+		if pix[x, y] == WHITE:
 			# found object
 			objid = objectid(x, y)
 			if objid == SPIDER or objid == FIREBALL:
@@ -235,14 +236,13 @@ with open('monsters.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate geometry.asm
+print 'Generating geometry.asm'
 r = ''
 for x in range(4, width - 1):
 	for y in range(4, height - 1):
-		color = pix[x, y]
-		if color == WHITE:
+		if pix[x, y] == WHITE:
 			# found object
-			objid = objectid(x, y)
-			if objid == ENTRYPOINT:
+			if objectid(x, y) == ENTRYPOINT:
 				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
 				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
 				r += 'MINX equ ' + str(minx) + '\n'
@@ -252,3 +252,41 @@ for x in range(4, width - 1):
 
 with open('geometry.asm', 'w') as file:
 	file.write(r)
+
+# Generate portals.asm
+print 'Generating portals.asm'
+r = ''
+nportals = 0
+xvalues = []
+yvalues = []
+for x in range(4, width - 1, 4):
+	for y in range(4, height - 1, 4):
+		if pix[x,y] == WHITE:
+			# found object
+			if objectid(x, y) == PORTAL:
+				nportals = nportals + 1
+				xvalues.append(x)
+				yvalues.append(y)
+				
+i = 0
+for x in range(4, width - 1, 4):
+	for y in range(4, height - 1, 4):
+		if pix[x, y] == WHITE:
+			# found object
+			if objectid(x, y)  == PORTAL:
+				r = r + ' fdb $' + format(x, '04x') + ',$' + format(y, '04x') + '\n'
+				r = r + ' fcb '
+				for j in range(len(xvalues)):
+					if i <> j:
+						r = r + coord(xvalues[j]) + ',' + coord(yvalues[j]) + ','
+				r = r[:-1] + '\n'
+				i = i + 1
+
+with open('../portals.asm', 'r') as file:
+	data = file.read().split('***')
+
+data[0] = 'NPORTALS equ ' + str(nportals)
+data[2] = r
+
+with open('portals.asm', 'w') as file:
+	file.write("".join(data))
