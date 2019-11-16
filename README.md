@@ -26,6 +26,8 @@ Added one more spider as a test.
 
 Added generation of arbitrary number of portals, monsters, treasures, walls.
 
+Added support for GHOST and SKULL monsters
+
 Added utility to generate level data from a gif image:
 
 * Use PSD file to alter/expand walls, add monsters and treasures

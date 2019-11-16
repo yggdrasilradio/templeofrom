@@ -163,7 +163,9 @@ FIREBALL = 23
 SPIDER = 24
 GOBLET = 25
 PITCHER = 26
+SKULL = 34
 BALL = 37
+GHOST = 45
 
 cross = ''
 ring = ''
@@ -191,9 +193,6 @@ for x in range(4, width - 1, 4):
 				pitcher = pitcher + s
 			elif objid == BALL:
 				ball = ball + s
-			else:
-				if objid <> SPIDER and objid <> FIREBALL and objid <> PORTAL and objid <> ENTRYPOINT: 
-					print "UNKNOWN OBJECT " + str(objid) + ' at ' + str(x) + ', ' + str(y)
 
 with open('../treasures.asm', 'r') as file:
 	data = file.read().split('***')
@@ -216,7 +215,7 @@ for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
 			objid = objectid(x, y)
-			if objid == SPIDER or objid == FIREBALL:
+			if objid == SPIDER or objid == FIREBALL or objid == GHOST or objid == SKULL:
 				x1 = x
 				while (pix[x1, y] <> BLUE):
 					x1 -= 1
@@ -233,6 +232,10 @@ for x in range(4, width - 1, 4):
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$00\n'
 				elif objid == FIREBALL:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$20\n'
+				elif objid == GHOST:
+					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$40\n'
+				elif objid == SKULL:
+					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$60\n'
 
 with open('../monsters.asm', 'r') as file:
 	data = file.read().split('***')

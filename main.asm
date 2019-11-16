@@ -121,7 +121,7 @@ tick	rmb 1
 *	X2	2 bytes
 *	Y1	2 bytes
 *	Y2	2 bytes
-*	ID	1 byte (00 = spider, 20 = fireball)
+*	ID	1 byte (00 = spider, 20 = fireball, 40 = ghost, 60 = skull)
 *
 *	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
 *	25% down from the left and top edges
