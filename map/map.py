@@ -165,7 +165,7 @@ GOBLET = 25
 PITCHER = 26
 SKULL = 34
 BALL = 37
-GHOST = 45
+GHOST = 35
 
 cross = ''
 ring = ''
