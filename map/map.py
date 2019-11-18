@@ -76,6 +76,20 @@ YELLOW = pix[5, 0]	# unused
 MAGENTA = pix[6, 0]	# unused
 CYAN = pix[7, 0]	# unused
 
+CROSS = 5
+ENTRYPOINT = 9
+RING = 10
+PORTAL = 17
+CROWN = 20
+CUP = 21
+FIREBALL = 23
+SPIDER = 24
+GOBLET = 25
+PITCHER = 26
+SKULL = 34
+BALL = 37
+GHOST = 35
+
 width = img.size[0]
 height = img.size[1]
 
@@ -153,20 +167,6 @@ with open('lines.asm', 'w') as file:
 
 # Generate treasures.asm
 print 'Generating treasures.asm'
-CROSS = 5
-ENTRYPOINT = 9
-RING = 10
-PORTAL = 17
-CROWN = 20
-CUP = 21
-FIREBALL = 23
-SPIDER = 24
-GOBLET = 25
-PITCHER = 26
-SKULL = 34
-BALL = 37
-GHOST = 35
-
 cross = ''
 ring = ''
 crown = ''
@@ -174,6 +174,7 @@ cup = ''
 goblet = ''
 pitcher = ''
 ball = ''
+ntreasures = 0
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
@@ -181,18 +182,25 @@ for x in range(4, width - 1, 4):
 			s = ' fcb ' + coord(x) + ',' + coord(y) + '\n'
 			if objid == CROSS:
 				cross = cross + s
+				ntreasures = ntreasures + 1
 			elif objid == RING:
 				ring = ring + s
+				ntreasures = ntreasures + 1
 			elif objid == CROWN:
 				crown = crown + s
+				ntreasures = ntreasures + 1
 			elif objid == CUP:
 				cup = cup + s
+				ntreasures = ntreasures + 1
 			elif objid == GOBLET:
 				goblet = goblet + s
+				ntreasures = ntreasures + 1
 			elif objid == PITCHER:
 				pitcher = pitcher + s
+				ntreasures = ntreasures + 1
 			elif objid == BALL:
 				ball = ball + s
+				ntreasures = ntreasures + 1
 
 with open('../treasures.asm', 'r') as file:
 	data = file.read().split('***')
@@ -211,6 +219,7 @@ with open('treasures.asm', 'w') as file:
 # Generate monsters.asm
 print 'Generating monsters.asm'
 r = ''
+nmonsters = 0
 for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x, y] == WHITE:
@@ -230,12 +239,16 @@ for x in range(4, width - 1, 4):
 					y2 += 1
 				if objid == SPIDER:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$00\n'
+					nmonsters = nmonsters + 1
 				elif objid == FIREBALL:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$20\n'
+					nmonsters = nmonsters + 1
 				elif objid == GHOST:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$40\n'
+					nmonsters = nmonsters + 1
 				elif objid == SKULL:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$60\n'
+					nmonsters = nmonsters + 1
 
 with open('../monsters.asm', 'r') as file:
 	data = file.read().split('***')
@@ -281,8 +294,8 @@ data[2] = r
 with open('portals.asm', 'w') as file:
 	file.write("".join(data))
 
-# Generate geometry.asm
-print 'Generating geometry.asm'
+# Generate constants.asm
+print 'Generating constants.asm'
 r = ''
 for x in range(4, width - 1):
 	for y in range(4, height - 1):
@@ -294,7 +307,9 @@ for x in range(4, width - 1):
 				r += 'MAXX equ ' + str(maxx) + '\n'
 				r += 'MINY equ ' + str(miny) + '\n'
 				r += 'MAXY equ ' + str(maxy) + '\n'
+				r += 'NMONSTERS equ ' + str(nmonsters) + '\n'
+				r += 'NTREASURES equ ' + str(ntreasures) + '\n'
 
-with open('geometry.asm', 'w') as file:
+with open('constants.asm', 'w') as file:
 	file.write(r)
 

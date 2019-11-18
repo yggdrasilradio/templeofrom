@@ -11,9 +11,9 @@
 ; 2000		code
 
  IFDEF MCUSTOM
- include map/geometry.asm
+ include map/constants.asm
  ELSE
- include geometry.asm
+ include constants.asm
  ENDC
 
 PIA0.DA	equ $ff00
@@ -37,7 +37,7 @@ RSTVEC	equ $72
 	setdp 0
 
 monsterptr rmb 2 ; pointer to current player's monster locations
-portaloff rmb 1 ; nonzero means portals are currently disabled
+portaloff rmb 1	; nonzero means portals are currently disabled
 V03	rmb 2
 V05	rmb 2
 V07	rmb 2
@@ -48,7 +48,7 @@ V0F	rmb 2
 V11	rmb 2
 V13	rmb 2
 V15	rmb 1
-V18	rmb 1
+V18	rmb 1	; is crown active?
 V19	rmb 1
 V1A	rmb 1
 V4F	rmb 1
@@ -87,7 +87,7 @@ VCF	rmb 1
 VD0	rmb 1
 VD1	rmb 1
 scorep1	rmb 3 ; player one's score
-VD5	rmb 1
+VD5	rmb 1 ; player dead flag
 VD6	rmb 1
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1
@@ -95,10 +95,13 @@ VD9	rmb 1
 VDA	rmb 1	; treasure count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1
-VDD	rmb 1
-VDE	rmb 1
-VDF	rmb 1
-VE0	rmb 1
+
+* hitbox
+hity1	rmb 1 ; miny
+hity2	rmb 1 ; maxy
+hitx1	rmb 1 ; minx
+hitx2	rmb 1 ; maxx
+
 numplayers	rmb 1 ; number of players in the game
 scrollstep	rmb 2 ; step/direction for maze scrolling
 plr1state	rmb 6 ; player two game state (6 bytes)
@@ -121,7 +124,7 @@ tick	rmb 1
 *	X2	2 bytes
 *	Y1	2 bytes
 *	Y2	2 bytes
-*	ID	1 byte (00 = spider, 20 = fireball, 40 = ghost, 60 = skull)
+*	ID	1 byte ($00 = spider, $20 = fireball, $40 = ghost, $60 = skull)
 *
 *	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
 *	25% down from the left and top edges
@@ -144,7 +147,15 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 *
 
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
-				; 32 bytes unused (useless)
+
+* EXPLOSION SPRITE QUEUE
+*
+* Each list item is 4 bytes:
+*	sprite	2 bytes (address of pointer to current sprite)
+*	X	1 byte (X coordinate divided by 4)
+*	Y	1 byte (Y coordinate divided by 4)
+
+XQUEUE		equ $1c00	; explosion queue (4 bytes per list item)
 
 * PLAYER 1 TREASURE LIST
 *
@@ -362,7 +373,7 @@ LC105	pshs a			; save left coordinate
 	addd renderscr		; add screen base
 	exg d,x			; save pointer and get back coordinates
 	subb ,s+		; calculate number of pixels
-	;incb			; add one (compensate for decb below)
+	incb			; add one (compensate for decb below)
 	leay LC09A,pcr		; point to pixel masks
 	anda #3			; get pixel number in byte
 	lda a,y			; get pixel mask
@@ -396,7 +407,8 @@ LC148	rts
 
 ; explosion sprites
 
-LC14B	fcb explosion1-*
+explosion
+	fcb explosion1-*
 	fcb explosion2-*
 	fcb explosion3-*
 	fcb explosion4-*
@@ -1046,7 +1058,7 @@ LD253	rts
 
 LD254	lda curposx
 	ldx mazeoffx
-	ldy #$1c00		; explosion sprite queue
+	ldy #XQUEUE		; explosion sprite queue
 	cmpa #$0f
 	bhi LD27A
 * SCROLL PLAYER LEFT
@@ -1358,7 +1370,7 @@ LD497	rts
 
 LD498	lda VC9
 	ldb VC7
-	tst V18
+	tst V18	   ; is crown active?
 	beq LD4C4
 	pshs b,a
 	adda #3
@@ -1450,14 +1462,14 @@ LD52E	andcc #$fb	; flag collision (Z clear)
 * Clear explosion sprite queue
 LD531	clra
 	clrb
-	std $1c00
-	std $1c04
-	std $1c08
-	std $1c0c
-	std $1c10
-	std $1c14
-	std $1c18
-	std $1c1c
+	std XQUEUE
+	std XQUEUE+4
+	std XQUEUE+8
+	std XQUEUE+12
+	std XQUEUE+16
+	std XQUEUE+20
+	std XQUEUE+24
+	std XQUEUE+28
 	clr VD7
 	rts
 
@@ -1470,15 +1482,15 @@ LD54E	tfr d,y
 	bls LD57C
 	cmpb #$7f
 	bhi LD57C
-	ldu #$1c00
+	ldu #XQUEUE	; explosion table
 	ldx #8
 LD562	ldd ,u		; find blank slot in 8 slots of 4 bytes each
 	beq LD56E
-	leau 4,u
+	leau 4,u	; found a blank slot
 	leax -1,x
 	bne LD562
 	bra LD57C
-LD56E	leax LC14B,pcr	; queue explosion, starting with first sprite
+LD56E	leax explosion,pcr	; queue explosion, starting with first sprite
 	stx ,u++
 	tfr y,d
 	suba #4
@@ -1529,7 +1541,7 @@ colors	fcb $00,$55,$aa,$ff	; all pixel colour masks for colours 0, 1, 2, 3
 
 ; render all queued explosions
 
-LD5C4	ldu #$1c00 ; explosion table
+LD5C4	ldu #XQUEUE ; explosion table
 	lda #8
 	pshs a
 	pshs u
@@ -1537,24 +1549,24 @@ LD5CD	ldu ,s	; u points to explosion table
 	ldd ,s  ; address of explosion table
 	addd #4 ; advance to next entry
 	std ,s
-	ldx ,u ; address of sprite
-	beq LD5F4	; on last sprite
+	ldx ,u ; address of sprite if any
+	beq LD5F4 ; skip empty queue item
 	ldd ,u 
-	addd #1
+	addd #1 ;advance to next sprite
 	std ,u
 	ldx ,u
 	ldb ,x
-	beq LD5F0
+	beq LD5F0 ; this explosion is done, clear this entry
 	abx
 	ldd 2,u ; get coordinates
 	tfr x,u ; get sprite pointer
-	bsr drawsprite
+	bsr drawsprite ; draw explosion sprite
 	bra LD5F4
-LD5F0	clra
+LD5F0	clra	; clear queue entry
 	clrb
 	std ,u
 LD5F4	dec 2,s
-	bne LD5CD
+	bne LD5CD ; next queue entry
 	leas 3,s
 	rts
 
@@ -1683,12 +1695,12 @@ LD6E9	rts
 
 LD829	lda curposy
 	ldb curposx
-	sta VE0
-	stb VDE
+	sta hitx2
+	stb hity2
 	suba #4
 	subb #4
-	sta VDF
-	stb VDD
+	sta hitx1
+	stb hity1
 	clr VDC
 	ldu objlistptr
 	lda VDA
@@ -1722,13 +1734,13 @@ LD841	ldb ,u
 	ldu 2,u
 	stb VD8
 	ldd VD8
-	cmpa VDF
+	cmpa hitx1
 	blt LD8A9
-	cmpa VE0
+	cmpa hitx2
 	bgt LD8A9
-	cmpb VDD
+	cmpb hity1
 	blt LD8A9
-	cmpb VDE
+	cmpb hity2
 	bgt LD8A9
 	clra
 	clrb
@@ -1949,31 +1961,31 @@ LDA19	ldd V52
 	ldd V50
 	subd mazeoffx
 	subd #4
-	stb VDD
+	stb hity1
 	addd #8
-	stb VDE
+	stb hity2
 	ldd V52
 	subd mazeoffy
 	subd #4
-	stb VDF
+	stb hitx1
 	addd #8
-	stb VE0
+	stb hitx2
 	lda #8
 	pshs a
-	ldu #$1bfc
+	ldu #XQUEUE-4
 LDA69	dec ,s
 	blt LDA90
 	leau 4,u
 	ldd ,u
 	beq LDA69
 	ldd 2,u
-	cmpa VDF
+	cmpa hitx1
 	bcs LDA69
-	cmpa VE0
+	cmpa hitx2
 	bhi LDA69
-	cmpb VDD
+	cmpb hity1
 	bcs LDA69
-	cmpb VDE
+	cmpb hity2
 	bhi LDA69
 	lbsr LD9EA
 	lda #$10
@@ -2160,10 +2172,10 @@ LDBC2	ldd ,u
 	tst V19
 	bne LDC02
 	clr V5C
-	lbsr LDD08
-	tst 8,u
+	lbsr LDD08	; chase player
+	tst 8,u		; spider vs fireball
 	beq LDC28
-	lbsr LDD08
+	lbsr LDD08	; fireball chases 2x faster
 	bra LDC28
 LDC02	ldd 2,u
 	subd ,u
@@ -2210,8 +2222,8 @@ LDC28	ldx ,s
 	bgt LDCCA
 	pshs u
 	ldb 8,u
-	leau LDD84,pcr	; spider
-	leau b,u	; or fireball
+	leau LDD84,pcr	; spider sprites
+	leau b,u	; or fireball sprites
 	lda V69
 	eora V8E
 	anda #2
@@ -2219,48 +2231,52 @@ LDC28	ldx ,s
 	leau 16,u
 LDC71	lda V8E
 	ldb V69
-	lbsr drawsprite
+	lbsr drawsprite ; draw monster sprite
 	puls u
 	ldd V68
 	subd #4
-	stb VDD
+	stb hity1
 	addd #8
-	stb VDE
+	stb hity2
 	ldd V8D
 	subd #4
-	stb VDF
+	stb hitx1
 	addd #8
-	stb VE0
-	lda #8
+	stb hitx2
+	lda #8	; 8 slots in explosion queue
 	pshs u
 	pshs a
-	ldu #$1bfc
-LDC9B	dec ,s
+
+	* Any collision between explosions and this monster?
+	ldu #XQUEUE-4	; explosion queue
+LDC9B	dec ,s		; done with queue?
 	blt LDCC6
-	leau 4,u
+	leau 4,u	; move to next queue slot
 	ldd ,u
-	beq LDC9B
-	ldd 2,u
-	cmpa VDF
-	bcs LDC9B
-	cmpa VE0
-	bhi LDC9B
-	cmpb VDD
-	bcs LDC9B
-	cmpb VDE
-	bhi LDC9B
+	beq LDC9B	; slot is empty
+	ldd 2,u		; coordinates of this explosion
+	cmpa hitx1	; hitbox min x
+	blo LDC9B	; no hit
+	cmpa hitx2	; hitbox max x
+	bhi LDC9B	; no hit
+	cmpb hity1	; hitbox min y
+	blo LDC9B	; no hit
+	cmpb hity2	; hitbox max y
+	bhi LDC9B	; no hit
 	clr VD5
-	clra
+	clra		; kill monster
 	clrb
 	std [3,s]
-	lda #$10
+	lda #$10	; 1000 points for spider or fireball
 	lbsr addscore
 	lbsr showscore
+
 LDCC6	puls a
 	puls u
 LDCCA	lbra LDBAF
-
 LDCCD	puls pc,u
+
+* Monster chase logic?
 LDCCF	pshs x
 	cmpd ,s
 	bhi LDCDA
@@ -2294,6 +2310,7 @@ LDCE9	ldd ,x			; get first coordinate base
 	bra LDCE9		; go process another monster
 LDD07	rts
 
+* Chase logic
 LDD08	lda #$ff
 	sta VD5
 	ldd V68
@@ -2404,12 +2421,12 @@ LDE58	lda curposy		; get current vertical coordinate on screen
 	ldb curposx		; get current horizontal coordinate on screen
 	deca			; calculate one pixel up and left (bottom right of comparison box)
 	decb
-	sta VE0			; save the calculated coordinates
-	stb VDE
+	sta hitx2			; save the calculated coordinates
+	stb hity2
 	suba #2			; calculate two more pixels up and left (top left of comparison box)
 	subb #2
-	sta VDF			; save those calculated coordinates
-	stb VDD
+	sta hitx1			; save those calculated coordinates
+	stb hity1
 	tst portaloff		; are portals active?
 	beq LDE70		; brif so - don't adjust counter
 	inc portaloff		; bump portal disable count (will eventually wrap to 0 and re-enable portals)
@@ -2450,13 +2467,13 @@ LDEB0	lda VD8			; get Y render coordinate
 * PORTAL ACTIVATED?
 	lda VD9			; get vertical render location
 	ldb VD8			; get horizontal render location
-	cmpa VDE		; are we below the bottom of the bounding box?
+	cmpa hity2		; are we below the bottom of the bounding box?
 	bgt LDE76		; brif so - not activating portal
-	cmpa VDD		; are we above the top of the bounding box?
+	cmpa hity1		; are we above the top of the bounding box?
 	blt LDE76		; brif so - not activating portal
-	cmpb VE0		; are we to the right of the bounding box?
+	cmpb hitx2		; are we to the right of the bounding box?
 	bgt LDE76		; brif so - not activating portal
-	cmpb VDF		; are we to the left of the bounding box?
+	cmpb hitx1		; are we to the left of the bounding box?
 	blt LDE76		; brif so - not activating portal
 * GO THROUGH PORTAL
 	lbsr dobleep		; make the portal sound
