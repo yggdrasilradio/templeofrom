@@ -245,23 +245,6 @@ data[1] = r
 with open('monsters.asm', 'w') as file:
 	file.write("".join(data))
 
-# Generate geometry.asm
-print 'Generating geometry.asm'
-r = ''
-for x in range(4, width - 1):
-	for y in range(4, height - 1):
-		if pix[x, y] == WHITE:
-			if objectid(x, y) == ENTRYPOINT:
-				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
-				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
-				r += 'MINX equ ' + str(minx) + '\n'
-				r += 'MAXX equ ' + str(maxx) + '\n'
-				r += 'MINY equ ' + str(miny) + '\n'
-				r += 'MAXY equ ' + str(maxy) + '\n'
-
-with open('geometry.asm', 'w') as file:
-	file.write(r)
-
 # Generate portals.asm
 print 'Generating portals.asm'
 r = ''
@@ -297,3 +280,21 @@ data[2] = r
 
 with open('portals.asm', 'w') as file:
 	file.write("".join(data))
+
+# Generate geometry.asm
+print 'Generating geometry.asm'
+r = ''
+for x in range(4, width - 1):
+	for y in range(4, height - 1):
+		if pix[x, y] == WHITE:
+			if objectid(x, y) == ENTRYPOINT:
+				r += 'STARTX equ ' + str(x + 2 - 64) + '\n'
+				r += 'STARTY equ ' + str(y + 2 - 48) + '\n'
+				r += 'MINX equ ' + str(minx) + '\n'
+				r += 'MAXX equ ' + str(maxx) + '\n'
+				r += 'MINY equ ' + str(miny) + '\n'
+				r += 'MAXY equ ' + str(maxy) + '\n'
+
+with open('geometry.asm', 'w') as file:
+	file.write(r)
+
