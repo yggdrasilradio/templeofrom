@@ -32,8 +32,6 @@ RSTVEC	equ $72
 
 *** SEGMENT 1 ***
 
-; These are the variables used by the game.
-
 	setdp 0
 
 monsterptr rmb 2 ; pointer to current player's monster locations
@@ -48,19 +46,17 @@ V0F	rmb 2
 V11	rmb 2
 V13	rmb 2
 V15	rmb 1
-V18	rmb 1	; is crown active?
+V18	rmb 1 ; is crown active?
 V19	rmb 1
 V1A	rmb 1
 V4F	rmb 1
 V50	rmb 2
 V52	rmb 2
 V5C	rmb 1
-V5D	rmb 2
-V5F	rmb 2
-V68	rmb 1
-V69	rmb 1
-V8D	rmb 1
-V8E	rmb 1
+V5D	rmb 2 ; target coord x
+V5F	rmb 2 ; target coord y
+V68	rmb 2 ; object coord x
+V8D	rmb 1 ; object coord y
 randseed rmb 2 ; the "random seed"
 mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
@@ -115,24 +111,9 @@ VF9	rmb 2
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
-tick	rmb 1
+tick	rmb 1 ; IRQ countdown timer
+tock	rmb 1 ; IRQ countup timer
 
-* MASTER MONSTER LIST
-*
-* Each list entry is 9 bytes:
-*	X1	2 bytes
-*	X2	2 bytes
-*	Y1	2 bytes
-*	Y2	2 bytes
-*	ID	1 byte ($00 = spider, $20 = fireball, $40 = ghost, $60 = skull)
-*
-*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
-*	25% down from the left and top edges
-*
-*	list ends with $0000
-
-monsters	equ $200	; unpacked monster data (9 bytes x 19 monsters + 2 bytes = 173 bytes)
-				; 339 bytes unused
 
 * SCREEN 1
 *
@@ -148,14 +129,34 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
 
+	org $1c00
+
 * EXPLOSION SPRITE QUEUE
+*
+* 8 items of 4 bytes each
 *
 * Each list item is 4 bytes:
 *	sprite	2 bytes (address of pointer to current sprite)
 *	X	1 byte (X coordinate divided by 4)
 *	Y	1 byte (Y coordinate divided by 4)
 
-XQUEUE		equ $1c00	; explosion queue (4 bytes per list item)
+XQUEUE	rmb 8*4
+
+* MASTER MONSTER LIST
+*
+* Each list entry is 9 bytes:
+*	X1	2 bytes
+*	X2	2 bytes
+*	Y1	2 bytes
+*	Y2	2 bytes
+*	ID	1 byte ($00 = spider, $20 = fireball, $40 = ghost, $60 = skull)
+*
+*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
+*	25% down from the left and top edges
+*
+*	list ends with $0000
+
+monsters rmb NMONSTERS*9+2
 
 * PLAYER 1 TREASURE LIST
 *
@@ -164,8 +165,7 @@ XQUEUE		equ $1c00	; explosion queue (4 bytes per list item)
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of treasure sprite)
 
-plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more treasures)
+plr1objlist rmb NTREASURES*4
 
 * PLAYER 1 MONSTER LIST
 *
@@ -173,37 +173,33 @@ plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 byt
 *	X	2 bytes
 *	Y	2 bytes
 
-plr1monsters	equ $1db0	; player one monsters in the maze (19 monsters x 4 bytes = 76 bytes)
-				; 20 bytes unused (room for 5 more monsters)
+plr1monsters rmb NMONSTERS*4
 
-* PLAYER 1 TREASURE LIST
+* PLAYER 2 TREASURE LIST
 *
 * Each list item is 4 bytes:
 *	X	1 byte (X coordinate divided by 4)
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of treasure sprite)
 
-plr2objlist	equ $1e10	; player two treasures in the maze (93 treasures x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more treasures)
-
+plr2objlist rmb NTREASURES*4
+	
 * PLAYER 2 MONSTER LIST
 *
 * Each list entry is 4 bytes:
 *	X	2 bytes
 *	Y	2 bytes
 
-plr2monsters	equ $1fa0	; player two monsters in the maze (19 monsters x 4 bytes = 76 bytes)
-				; 20 bytes unused (room for 5 more monsters)
+plr2monsters	 rmb NMONSTERS*4
 
-	org $2000
+	org $3000
 
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
 
-; fetch in various source files
-                include sound.asm       ; fetch sound handling routines
-                include joystick.asm    ; fetch joystick handling routines
+	include sound.asm       ; fetch sound handling routines
+	include joystick.asm    ; fetch joystick handling routines
 
 ; Render the vertical lines of the map
 drawvert leau LC34A,pcr		; point to short circuit offset table for vertical lines
@@ -646,12 +642,6 @@ dupheader0 ldd ,--x		; copy two bytes from screen #1 to screen #2
 	puls y,x,b,a		; restore registers
 	rts
 
-* Entry:
-*  X
-*  Y
-*  D
-* Exit:
-*  CC
 LCF3C	pshs b,a
 	cmpx ,s
 	bhi LCF4B
@@ -717,6 +707,7 @@ LCF85	ldd ,x			; are we at the end of the table?
 	bra LCF85		; go handle another
 
 LCF92	std ,y			; save end of table flag
+
 LCF94	lbsr LD531
 	clr V03
 	ldu #plr1objlist	; point to player one's treasure list
@@ -913,7 +904,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clra			; stop maze scroll
 	clrb
 	std scrollstep
-	clr VD5
+	clr VD5			; player dead flag
 	lbsr drawmazeboth	; draw maze on both screens
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49		; 4 part music routine
@@ -960,7 +951,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	clra			; stop maze scroll
 	clrb
 	std scrollstep
-	clr VD5
+	clr VD5			; player dead flag
 	lbsr drawmazeboth	; draw maze on both screens
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49		; 4 part music routine
@@ -995,12 +986,12 @@ LD1BE	lbsr swaprender		; switch screens
 	lbsr LD829
 	lbsr LDA93
 	lbsr LDB96
-	lda VD5
+	lda VD5			; player dead flag
 	pshs a
 	lbsr LD9EF
 	lda VD5
 	ora ,s+
-	sta VD5
+	sta VD5			; player dead flag
 	lbsr LD40B
 	lbsr LDE58
 	lbra LD375		; animate running man and return
@@ -1776,7 +1767,7 @@ LD8BF	leau 4,u
 	ldu objlistptr
 	lbsr buildobjlist
 	ldu monsterptr
-	lbsr LDCE6
+	lbsr LDCE6		; initialize monster home positions
 	lbsr setstartpos	; starting position for start of turn
 	lbsr LDFD7
 	leau LCE2B,pcr		; opening tune
@@ -2082,7 +2073,7 @@ LDB2E	deca			; timeout (count down this time)
 LDB35	puls pc,u,b,a		; restore registers and return
 
 LDB37	lda #$ff
-	sta VD5
+	sta VD5			; player dead flag
 	ldb curposx
 	clra
 	addd mazeoffx
@@ -2090,13 +2081,13 @@ LDB37	lda #$ff
 	cmpd V50
 	beq LDB5E
 	blt LDB55
-	clr VD5
+	clr VD5			; player dead flag
 	ldd V50
 	addd #1
 	std V50
 	bra LDB5E
 LDB55	ldd V50
-	clr VD5
+	clr VD5			; player dead flag
 	subd #1
 	std V50
 LDB5E	ldb curposy
@@ -2109,11 +2100,11 @@ LDB5E	ldb curposy
 	ldd V52
 	addd #1
 	std V52
-	clr VD5
+	clr VD5			; player dead flag
 	bra LDB81
 LDB78	ldd V52
 	subd #1
-	clr VD5
+	clr VD5			; player dead flag
 	std V52
 LDB81	rts
 
@@ -2127,43 +2118,49 @@ LDB86	lbsr LDAEF
 	lbsr LCD49		; 4 part music routine
 	puls pc,a
 
+* Chase player
+
 LDB96	ldu monsterptr
 	leau -4,u
 	pshs u
 	ldu #monsters
 	leau -9,u
+
+	* monster chases player
 	clra
 	ldb curposx
 	addd mazeoffx
-	std V5D
+	std V5D		; target coord x is player x
 	clra
 	ldb curposy
 	addd mazeoffy
-	std V5F
+	std V5F		; target coord y is player y
+
 LDBAF	leau 9,u
-	ldd ,s
+	ldd ,s		; advance pointer to monster locations
 	addd #4
 	std ,s
-	tst VD5
+	tst VD5		; player dead flag
 	beq LDBC2
-	lbsr setstartpos
+
+	lbsr setstartpos ; move player to entry point if dead
 	lbra LDCCD
 
 LDBC2	ldd ,u
 	lbeq LDCCD
 	ldx ,s
-	ldd ,x
-	beq LDBAF
-	std V68
-	ldd 2,x
-	std V8D
-	ldd V5D
+	ldd ,x		; monster x
+	beq LDBAF	; skip dead monster
+	std V68		; object coord x
+	ldd 2,x		; monster y
+	std V8D		; object coord y
+	ldd V5D		; target coord x
 	ldx ,u
 	ldy 2,u
 	leay -3,y
 	lbsr LCF3C
 	bne LDC02
-	ldd V5F
+	ldd V5F		; target coord y
 	ldx 4,u
 	ldy 6,u
 	leay -3,y
@@ -2171,12 +2168,14 @@ LDBC2	ldd ,u
 	bne LDC02
 	tst V19
 	bne LDC02
+
 	clr V5C
 	lbsr LDD08	; chase player
 	tst 8,u		; spider vs fireball
 	beq LDC28
 	lbsr LDD08	; fireball chases 2x faster
 	bra LDC28
+
 LDC02	ldd 2,u
 	subd ,u
 	lsra
@@ -2184,10 +2183,10 @@ LDC02	ldd 2,u
 	lsra
 	rorb
 	addd ,u
-	ldx V68
+	ldx V68		; object coord x
 	exg d,x
 	lbsr LDCCF
-	std V68
+	std V68		; object coord x
 	ldd 6,u
 	subd 4,u
 	lsra
@@ -2195,50 +2194,52 @@ LDC02	ldd 2,u
 	lsra
 	rorb
 	addd 4,u
-	ldx V8D
+	ldx V8D		; object coord y
 	exg d,x
 	lbsr LDCCF
-	std V8D
+	std V8D		; object coord y
 LDC28	ldx ,s
-	ldd V68
+	ldd V68		; object coord x
 	std ,x
-	ldd V8D
+	ldd V8D		; object coord y
 	std 2,x
-	ldd V68
+	ldd V68		; object coord x
 	subd mazeoffx
-	std V68
-	ldd V8D
+	std V68		; object coord x
+	ldd V8D		; object coord y
 	subd mazeoffy
-	std V8D
-	ldd V68
+	std V8D		; object coord y
+	ldd V68		; object coord x
 	cmpd #$fff8
 	lblt LDCCA
 	cmpd #$7f
 	bgt LDCCA
-	ldd V8D
+	ldd V8D		; object coord y
 	cmpd #$fff8
 	blt LDCCA
 	cmpd #$5f
 	bgt LDCCA
 	pshs u
 	ldb 8,u
-	leau LDD84,pcr	; spider sprites
-	leau b,u	; or fireball sprites
-	lda V69
-	eora V8E
+	leau LDD84,pcr	; drawing spider sprites
+	leau b,u	; or fireball, ghost or skull sprites
+	lda V68+1	; low order object coord x
+	eora V8D+1	; low order object coord y
 	anda #2
 	beq LDC71
-	leau 16,u
-LDC71	lda V8E
-	ldb V69
+	leau 16,u	; use second frame of sprite animation
+LDC71	lda V8D+1	; low order object coord y
+	ldb V68+1	; low order object coord x
 	lbsr drawsprite ; draw monster sprite
 	puls u
-	ldd V68
+
+	* set up hitbox for collision test
+	ldd V68		; object coord x
 	subd #4
 	stb hity1
 	addd #8
 	stb hity2
-	ldd V8D
+	ldd V8D		; object coord y
 	subd #4
 	stb hitx1
 	addd #8
@@ -2263,7 +2264,7 @@ LDC9B	dec ,s		; done with queue?
 	blo LDC9B	; no hit
 	cmpb hity2	; hitbox max y
 	bhi LDC9B	; no hit
-	clr VD5
+	clr VD5		; player dead flag
 	clra		; kill monster
 	clrb
 	std [3,s]
@@ -2276,16 +2277,18 @@ LDCC6	puls a
 LDCCA	lbra LDBAF
 LDCCD	puls pc,u
 
-* Monster chase logic?
+* Monster chase logic
+* X target coord
+* D object coord
 LDCCF	pshs x
 	cmpd ,s
 	bhi LDCDA
-	bcs LDCDF
-	bra LDCE4
-LDCDA	subd #1
+	blo LDCDF
+	bra LDCE4	; no movement
+LDCDA	subd #1		; move left/up
 	bra LDCE2
-LDCDF	addd #1
-LDCE2	clr VD5
+LDCDF	addd #1		; move right/down
+LDCE2	clr VD5		; player not dead
 LDCE4	puls pc,x
 
 * initialize monster home positions
@@ -2312,17 +2315,17 @@ LDD07	rts
 
 * Chase logic
 LDD08	lda #$ff
-	sta VD5
-	ldd V68
-	ldx V5D
-	leax -3,x
-	lbsr LDCCF
-	std V68
-	ldd V8D
-	ldx V5F
-	leax -3,x
-	lbsr LDCCF
-	std V8D
+	sta VD5			; mark player dead, if movement necessary it'll get cleared
+	ldd V68			; object coord x
+	ldx V5D			; target coord X
+	leax -3,x		; offset target
+	lbsr LDCCF		; chase target coord
+	std V68			; update object coord x
+	ldd V8D			; object coord y
+	ldx V5F			; target coord y
+	leax -3,x		; offset target
+	lbsr LDCCF		; chase target coord
+	std V8D			; update object coord y
 	rts
 
  IFDEF MCUSTOM
@@ -2634,6 +2637,7 @@ IRQ	lda PIA0.DB		; clear interrupt
 	lda tick
 	beq IRQ@
 	dec tick
-IRQ@	rti
+IRQ@	inc tock
+	rti
 
 	end START

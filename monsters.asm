@@ -25,7 +25,6 @@ LDD23
 	fcb $c1,$cb,$4d,$67,$00
 	fcb $30,$41,$4a,$5f,$20
 	fcb $0d,$23,$55,$60,$00
-	fcb $61,$78,$9d,$aa,$00 ; NEW spider in room just above next room
 	fcb $61,$78,$b0,$bd,$00 ; spider at center bottom of maze
 	fcb $b8,$d4,$83,$a5,$20 ; fireball at lower right
 ***
