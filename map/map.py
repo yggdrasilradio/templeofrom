@@ -12,7 +12,7 @@ def objectid(x, y):
 		for j in range(y, y + 7):
 			color = pix[i, j]
 			if color == GREEN:
-				sum = sum + 1
+				sum += 1
 	return sum
 
 def hout(x1, y, x2):
@@ -99,7 +99,7 @@ for x in range(4, width - 1):
 	for y in range(4, height - 1):
 		if pix[x, y] == WHITE:
 			if x % 4 <> 0:
-				i = i + 1
+				i += 1
 if i <> 0:
 	print "There are " + str(i) + " misaligned sprites"
 
@@ -181,26 +181,26 @@ for x in range(4, width - 1, 4):
 			objid = objectid(x, y)
 			s = ' fcb ' + coord(x) + ',' + coord(y) + '\n'
 			if objid == CROSS:
-				cross = cross + s
-				ntreasures = ntreasures + 1
+				cross += s
+				ntreasures += 1
 			elif objid == RING:
-				ring = ring + s
-				ntreasures = ntreasures + 1
+				ring += s
+				ntreasures += 1
 			elif objid == CROWN:
-				crown = crown + s
-				ntreasures = ntreasures + 1
+				crown += s
+				ntreasures += 1
 			elif objid == CUP:
-				cup = cup + s
-				ntreasures = ntreasures + 1
+				cup += s
+				ntreasures += 1
 			elif objid == GOBLET:
-				goblet = goblet + s
-				ntreasures = ntreasures + 1
+				goblet += s
+				ntreasures += 1
 			elif objid == PITCHER:
-				pitcher = pitcher + s
-				ntreasures = ntreasures + 1
+				pitcher += s
+				ntreasures += 1
 			elif objid == BALL:
-				ball = ball + s
-				ntreasures = ntreasures + 1
+				ball += s
+				ntreasures += 1
 
 with open('../treasures.asm', 'r') as file:
 	data = file.read().split('***')
@@ -226,29 +226,29 @@ for x in range(4, width - 1, 4):
 			objid = objectid(x, y)
 			if objid == SPIDER or objid == FIREBALL or objid == GHOST or objid == SKULL:
 				x1 = x
-				while (pix[x1, y] <> BLUE):
+				while (pix[x1, y] <> BLUE and pix[x1, y] <> YELLOW):
 					x1 -= 1
 				x2 = x
-				while (pix[x2, y] <> BLUE):
+				while (pix[x2, y] <> BLUE and pix[x2, y] <> YELLOW):
 					x2 += 1
 				y1 = y
-				while (pix[x, y1] <> BLUE):
+				while (pix[x, y1] <> BLUE and pix[x, y1] <> YELLOW):
 					y1 -= 1
 				y2 = y
-				while (pix[x, y2] <> BLUE):
+				while (pix[x, y2] <> BLUE and pix[x, y2] <> YELLOW):
 					y2 += 1
 				if objid == SPIDER:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$00\n'
-					nmonsters = nmonsters + 1
+					nmonsters += 1
 				elif objid == FIREBALL:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$20\n'
-					nmonsters = nmonsters + 1
+					nmonsters += 1
 				elif objid == GHOST:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$40\n'
-					nmonsters = nmonsters + 1
+					nmonsters += 1
 				elif objid == SKULL:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$60\n'
-					nmonsters = nmonsters + 1
+					nmonsters += 1
 
 with open('../monsters.asm', 'r') as file:
 	data = file.read().split('***')
@@ -268,7 +268,7 @@ for x in range(4, width - 1, 4):
 	for y in range(4, height - 1, 4):
 		if pix[x,y] == WHITE:
 			if objectid(x, y) == PORTAL:
-				nportals = nportals + 1
+				nportals += 1
 				xvalues.append(x)
 				yvalues.append(y)
 				
@@ -283,7 +283,7 @@ for x in range(4, width - 1, 4):
 					if i <> j:
 						r = r + coord(xvalues[j]) + ',' + coord(yvalues[j]) + ','
 				r = r[:-1] + '\n'
-				i = i + 1
+				i += 1
 
 with open('../portals.asm', 'r') as file:
 	data = file.read().split('***')
