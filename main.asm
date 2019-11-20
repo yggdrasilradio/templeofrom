@@ -47,7 +47,7 @@ V11	rmb 2
 V13	rmb 2
 V15	rmb 1
 V18	rmb 1 ; is crown active?
-V19	rmb 1
+V19	rmb 1 ; is crystal ball active?
 V1A	rmb 1
 V4F	rmb 1
 V50	rmb 2
@@ -620,11 +620,11 @@ loop@	lda tick
 	sync
 	puls a,pc
 
-; Clear screen one header (to colour #3)
+; Clear screen one header (to color #3)
 clrheader pshs y,x,b,a		; save registers
 	ldx #SCREEN1		; point to start of screen #1
 	ldy #$80		; set up to clear 256 bytes (2 bytes at a time)
-	ldd #$ffff		; set up to use colour #3
+	ldd #$ffff		; set up to use color #3
 clrheader0 std ,x++		; clear out two bytes
 	leay -1,y		; done yet?
 	bne clrheader0		; brif not
@@ -642,11 +642,15 @@ dupheader0 ldd ,--x		; copy two bytes from screen #1 to screen #2
 	puls y,x,b,a		; restore registers
 	rts
 
+* Is player inside aggro area?
+; D: player coord
+; X: aggro box left/top
+; Y: aggro box right/bottom
 LCF3C	pshs b,a
 	cmpx ,s
 	bhi LCF4B
 	cmpy ,s
-	bcs LCF4B
+	blo LCF4B
 	orcc #4
 	bra LCF4D
 LCF4B	andcc #$fb
@@ -664,7 +668,7 @@ LCF50	nop			; flag for valid warm start routine
 	lda #$55		; flag for reset vector as valid
 	lds #$3ff		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
-	lda #$f8		; code for 2 colour 256px graphics, colour set 1
+	lda #$f8		; code for 2 color 256px graphics, color set 1
 	sta PIA1.DB		; set VDG graphics mode
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
 
@@ -890,8 +894,8 @@ LD0EE	ldu #plr1state		; point to player one state
 	lbsr LD9EA
 	lbsr LD531
 	clr portaloff		; mark all portals as active
-	clr V18
-	clr V19
+	clr V18			; crown inactive
+	clr V19			; crystal ball inactive
 	clr VD1
 	ldu #plr1monsters	; point to player one's monster locations
 	stu monsterptr		; save as monster location pointer
@@ -937,8 +941,8 @@ LD156	ldu #plr2state		; point to player two's state data
 	lbsr LD9EA
 	lbsr LD531
 	clr portaloff		; mark all portals as active
-	clr V18
-	clr V19
+	clr V18			; crown inactive
+	clr V19			; crystal ball inactive
 	clr VD1
 	ldu #plr2monsters	; point to player two's monster locations
 	stu monsterptr		; set as monster location pointer
@@ -972,20 +976,20 @@ LD1AC	ldu #plr2state		; point to player two state
 
 * COMMON PLAY LOOP
 LD1BE	lbsr swaprender		; switch screens
+	lbsr LD254		; adjust explosion queue for screen scrolling
 	lbsr LD254
 	lbsr LD254
-	lbsr LD254
-	lbsr checkcssel		; check for colour set selection keys
+	lbsr checkcssel		; check for color set selection keys
 	lbsr LDF96
 	lbsr clearrender	; clear workspace
-	lbsr drawvert
+	lbsr drawvert		; draw walls
 	lbsr drawhoriz
-	bsr LD1FF
+	bsr LD1FF		; adjust player position
 	bsr LD1FF
 	lbsr LD5C4
 	lbsr LD829
 	lbsr LDA93
-	lbsr LDB96
+	lbsr LDB96		; chase player
 	lda VD5			; player dead flag
 	pshs a
 	lbsr LD9EF
@@ -1435,7 +1439,7 @@ pset	cmpa #$5f	; is the Y coordinate off bottom of screen?
 	anda ,x		; clear pixel in data byte
 	bitb ,x		; was the pixel set?
 	bne LD524	; brif so - flag collision
-	andb color	; get correct pixel data in the all colour byte
+	andb color	; get correct pixel data in the all color byte
 	sta ,x		; save cleared pixel data
 	orb ,x		; merge it with new pixel data
 	stb ,x		; set screen data
@@ -1443,7 +1447,7 @@ pset	cmpa #$5f	; is the Y coordinate off bottom of screen?
 	rts
 
 LD524	inc collision	; flag collision
-	andb color	; get correct pixel data in all colour byte
+	andb color	; get correct pixel data in all color byte
 	sta ,x		; save cleared pixel data
 	orb ,x		; merge it with new pixel data
 	stb ,x		; set screen data
@@ -1511,9 +1515,9 @@ LD58D	ldd ,s			; fetch current pixel data
 	rol ,s
 	rola
 	beq LD5AB		; brif pixel is not set
-	leay colors,pcr		; point to all pixel colour masks
-	lda a,y			; get colour mask for this colour
-	sta color		; save colour mask for rendering
+	leay colors,pcr		; point to all pixel color masks
+	lda a,y			; get color mask for this color
+	sta color		; save color mask for rendering
 	ldd 4,s			; get render coordinates
 	lbsr pset		; render pixel on screen
 LD5AB	inc 5,s			; bump X render coordinate
@@ -1528,7 +1532,7 @@ LD5BB	leas 6,s		; deallocate local storage
 	tst collision		; set Z if no collision
 	rts
 
-colors	fcb $00,$55,$aa,$ff	; all pixel colour masks for colours 0, 1, 2, 3
+colors	fcb $00,$55,$aa,$ff	; all pixel color masks for colors 0, 1, 2, 3
 
 ; render all queued explosions
 
@@ -1835,7 +1839,7 @@ LD959	cmpb ,y+		; are we at the right index point in the font?
 LD961	ldd 3,s			; get render coordinates
 	lbsr drawglyph		; render character to screen
 	lbsr dupheader		; copy rendered text to second screen
-	lbsr checkcssel		; check colour set selection keys
+	lbsr checkcssel		; check color set selection keys
 	lbsr dobleep		; do the bleep if required
 	ldd 1,s			; get string pointer
 	addd #1			; move to next character
@@ -1862,7 +1866,7 @@ scrolllong	lda #120	; do 120 iterations
 scrollmaze	pshs a		; save the iteration count
 LD99A	dec ,s			; decrement iteration count
 	beq LD9E6		; brif we're done with all the iterations
-	lbsr checkcssel		; check colour set selection keys
+	lbsr checkcssel		; check color set selection keys
 	lbsr swaprender		; swap screens
 	lbsr clearrender	; get a clear canvas
 	lbsr drawvert
@@ -2118,8 +2122,6 @@ LDB86	lbsr LDAEF
 	lbsr LCD49		; 4 part music routine
 	puls pc,a
 
-* Chase player
-
 LDB96	ldu monsterptr
 	leau -4,u
 	pshs u
@@ -2137,7 +2139,7 @@ LDB96	ldu monsterptr
 	std V5F		; target coord y is player y
 
 LDBAF	leau 9,u
-	ldd ,s		; advance pointer to monster locations
+	ldd ,s		; advance pointer to next monster location
 	addd #4
 	std ,s
 	tst VD5		; player dead flag
@@ -2154,21 +2156,26 @@ LDBC2	ldd ,u
 	std V68		; object coord x
 	ldd 2,x		; monster y
 	std V8D		; object coord y
+
+* Is the player inside the monster's aggro area?
 	ldd V5D		; target coord x
 	ldx ,u
 	ldy 2,u
 	leay -3,y
-	lbsr LCF3C
+	lbsr LCF3C	; player inside monster's aggro area?
 	bne LDC02
+
 	ldd V5F		; target coord y
 	ldx 4,u
 	ldy 6,u
 	leay -3,y
-	lbsr LCF3C
-	bne LDC02
-	tst V19
+	lbsr LCF3C	; player inside monster's aggro area?
 	bne LDC02
 
+	tst V19		; is crystal ball active?
+	bne LDC02
+
+* Player is inside aggro area: chase player
 	clr V5C
 	lbsr LDD08	; chase player
 	tst 8,u		; spider vs fireball
@@ -2176,28 +2183,30 @@ LDBC2	ldd ,u
 	lbsr LDD08	; fireball chases 2x faster
 	bra LDC28
 
-LDC02	ldd 2,u
+* Player is outside monster aggro area: return to home
+LDC02	ldd 2,u		; x2 - x1
 	subd ,u
-	lsra
+	lsra		; divide by 4
 	rorb
 	lsra
 	rorb
-	addd ,u
+	addd ,u		; + x1
 	ldx V68		; object coord x
 	exg d,x
 	lbsr LDCCF
 	std V68		; object coord x
-	ldd 6,u
+	ldd 6,u		; y2 - y1
 	subd 4,u
-	lsra
+	lsra		; divide by 4
 	rorb
 	lsra
 	rorb
-	addd 4,u
+	addd 4,u	; + y1
 	ldx V8D		; object coord y
 	exg d,x
 	lbsr LDCCF
 	std V8D		; object coord y
+
 LDC28	ldx ,s
 	ldd V68		; object coord x
 	std ,x
@@ -2381,7 +2390,7 @@ LDDFB	pshs b			; save X coordinate
 	leay LD4EA,pcr		; point to pixel masks
 	ldb a,y			; get pixel mask for pixel
 	comb			; invert it so we can clear the pixels
-	andb ,x			; read screen data and clear the pixel to colour #0
+	andb ,x			; read screen data and clear the pixel to color #0
 	stb ,x			; set new pixel data on screen
 	rts
 
@@ -2560,19 +2569,6 @@ LDFA2	rts
 vermess	fcb 13
 	fcc 'VERSION 1.0.2'
 
-;checkcssel	ldd #$c07f		; code for 256 px 2 colour, colour set 0, and scan code for SHIFT
-;	bsr LDFC1			; scan keyboard and set VDG if pressed
-;	ldd #$c8fd			; code for 128 px 4 colour, colour set 1, and scan code for CLEAR
-;	bsr LDFC1			; scan keyboard and set VDG if pressed
-;	ldd #$f8fe			; code for 128 px 4 colour, colour set 1, and scan code for ENTER
-;LDFC1	stb PIA0.DB			; save column strobe
-;	ldb PIA0.DA			; read keyboard data
-;	andb #$7f			; mask off comparator
-;	cmpb #$3f			; do we have a key press in row 6?
-;	bne LDFD0			; brif not
-;	sta PIA1.DB			; program VDG
-;LDFD0	rts
-
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
 checkcssel ldd #$c07f ; SHIFT
 	bsr LDFC1
@@ -2620,11 +2616,11 @@ LDFD7	pshs u,b,a		; save registers
 	ldu #PIA1.DB		; point to PIA1 Data B
 	lda ,u			; fetch current VDG settings
 	pshs a			; save it
-	lda #$c0		; 256 px, 4 colour, colour set 0
+	lda #$c0		; 256 px, 4 color, color set 0
 	sta ,u			; set VDG
 	lda #10			; iterate 10 times (5 complete cycles)
 LDFE6	ldb ,u			; get current VDG mode
-	eorb #8			; flip colour set
+	eorb #8			; flip color set
 	stb ,u			; set new VDG mode
 	lbsr dobleep
 	deca			; done all iterations
