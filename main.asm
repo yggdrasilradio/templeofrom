@@ -107,7 +107,7 @@ scoreptr	rmb 2 ; pointer to current player's score
 texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
-VF9	rmb 2
+VF9	rmb 2 ; does the bat exist?
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
@@ -1690,6 +1690,7 @@ LD6E9	rts
 
 LD829	lda curposy
 	ldb curposx
+	* Set up hitbox for player collision with treasures
 	sta hitx2
 	stb hity2
 	suba #4
@@ -1698,11 +1699,11 @@ LD829	lda curposy
 	stb hity1
 	clr VDC
 	ldu objlistptr
-	lda VDA
+	lda VDA		; number of treasures
 	pshs a
-LD841	ldb ,u
-	beq LD8BF
-	inc VDC
+LD841	ldb ,u		; treasure x
+	beq LD8BF	; treasure already collected
+	inc VDC		; number of remaining treasures
 	clra
 	lslb
 	rola
@@ -1710,11 +1711,11 @@ LD841	ldb ,u
 	rola
 	subd mazeoffx
 	cmpd #$fffa
-	blt LD8BF
+	blt LD8BF	; offscreen
 	cmpd #$7f
-	bgt LD8BF
+	bgt LD8BF	; offscreen
 	stb VD9
-	ldb 1,u
+	ldb 1,u		; treasure y
 	clra
 	lslb
 	rola
@@ -1722,9 +1723,9 @@ LD841	ldb ,u
 	rola
 	subd mazeoffy
 	cmpd #2
-	blt LD8BF
+	blt LD8BF	; offscreen
 	cmpd #$5f
-	bgt LD8BF
+	bgt LD8BF	; offscreen
 	stu VBF
 	ldu 2,u
 	stb VD8
@@ -1737,6 +1738,8 @@ LD841	ldb ,u
 	blt LD8A9
 	cmpb hity2
 	bgt LD8A9
+
+* Treasure collected!
 	clra
 	clrb
 	ldu VBF
@@ -1745,27 +1748,31 @@ LD841	ldb ,u
 	lda -1,u
 	lbsr LDF80
 	lbsr addscore
-	ldd VF9
+	ldd VF9			; does the bat exist?
 	beq LD8A2
 	lda -1,u
-	lbsr addscore
+	lbsr addscore		; double points if the bat is chasing you
 LD8A2	lbsr showscore
 	ldu VBF
 	bra LD8BF
-LD8A9	lbsr drawsprite
+
+* Treasure destroyed by laser
+LD8A9	lbsr drawsprite		; draw treasure
 	beq LD8BD
-	clra
+	clra			; delete treasure
 	clrb
 	std [VBF]
 	ldd VD8
 	adda #4
 	addb #4
-	lbsr LD54E ; queue an explosion
+	lbsr LD54E		; queue an explosion
 LD8BD	ldu VBF
+
 LD8BF	leau 4,u
-	dec ,s
+	dec ,s			; next treasure
 	lbne LD841
 	puls a
+
 	tst VDC
 	bne LD8E4
 	ldu objlistptr
@@ -2173,7 +2180,7 @@ LDBC2	ldd ,u
 	bne LDC02
 
 	tst V19		; is crystal ball active?
-	bne LDC02
+	bne LDC02	; if so, monster can't see player
 
 * Player is inside aggro area: chase player
 	clr V5C
@@ -2207,6 +2214,7 @@ LDC02	ldd 2,u		; x2 - x1
 	lbsr LDCCF
 	std V8D		; object coord y
 
+	* What's the monster's position in global coordinates?
 LDC28	ldx ,s
 	ldd V68		; object coord x
 	std ,x
@@ -2218,6 +2226,8 @@ LDC28	ldx ,s
 	ldd V8D		; object coord y
 	subd mazeoffy
 	std V8D		; object coord y
+
+	* Is this monster onscreen?
 	ldd V68		; object coord x
 	cmpd #$fff8
 	lblt LDCCA
@@ -2228,6 +2238,8 @@ LDC28	ldx ,s
 	blt LDCCA
 	cmpd #$5f
 	bgt LDCCA
+
+	* Draw monster
 	pshs u
 	ldb 8,u
 	leau LDD84,pcr	; drawing spider sprites
