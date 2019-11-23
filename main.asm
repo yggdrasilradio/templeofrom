@@ -50,9 +50,9 @@ V18	rmb 1 ; is crown active?
 V19	rmb 1 ; is crystal ball active?
 V1A	rmb 1
 V4F	rmb 1
-V50	rmb 2
-V52	rmb 2
-V5C	rmb 1
+V50	rmb 2 ; bat x position
+V52	rmb 2 ; bat y position
+V5C	rmb 1 ; bat creation timer
 V5D	rmb 2 ; target coord x
 V5F	rmb 2 ; target coord y
 V68	rmb 2 ; object coord x
@@ -107,7 +107,7 @@ scoreptr	rmb 2 ; pointer to current player's score
 texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
-VF9	rmb 2 ; does the bat exist?
+VF9	rmb 2 ; bat sprite (or zero if bat inactive)
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
@@ -980,7 +980,7 @@ LD1BE	lbsr swaprender		; switch screens
 	lbsr LD254
 	lbsr LD254
 	lbsr checkcssel		; check for color set selection keys
-	lbsr LDF96
+	lbsr LDF96		; age crystal ball and crown
 	lbsr clearrender	; clear workspace
 	lbsr drawvert		; draw walls
 	lbsr drawhoriz
@@ -1920,19 +1920,22 @@ LD9E6	puls a			; clean up iteration count
 	clra			; set zero flag - no buttons pressed
 	rts
 
+* deactivate bat
 LD9EA	clra
 	clrb
 	std VF9
 	rts
 
-LD9EF	ldd VF9
-	lbeq LDA92
-	tst V19
-	beq LDA02
-	ldd V50
+LD9EF	ldd VF9		; bat active?
+	lbeq LDA92	; no
+	tst V19		; crystal ball active?
+	beq LDA02	; no
+
+	ldd V50		; crystal ball is active, bat wanders off
 	addd #1
 	std V50
 	bra LDA08
+
 LDA02	lbsr LDB37
 	lbsr LDB37
 LDA08	leau LDACF,pcr	; first bat sprite
@@ -1972,6 +1975,8 @@ LDA19	ldd V52
 	stb hitx1
 	addd #8
 	stb hitx2
+
+	* hit by any explosions?
 	lda #8
 	pshs a
 	ldu #XQUEUE-4
@@ -1991,36 +1996,41 @@ LDA69	dec ,s
 	bhi LDA69
 	lbsr LD9EA
 	lda #$10
-	lbsr addscore
+	lbsr addscore	; 100 points for bat
 	lbsr showscore
 LDA90	puls a
 LDA92	rts
 
+* Decide whether or not to create the bat
 LDA93	pshs u,b,a
-	ldd VF9
-	bne LDACD
-	inc V5C
-	bne LDACD
-	tst V19
-	bne LDACD
-	leau LDACF,pcr
-	stu VF9
+	ldd VF9		; bat already exists?
+	bne LDACD	; no
+	inc V5C		; bat creation timer
+	bne LDACD	; not yet
+	tst V19		; crystal ball active?
+	bne LDACD	; yes
+
+* Create the bat
+	leau LDACF,pcr	; bat sprite
+	stu VF9		; activate bat
+	* Place the bat just offscreen at a random corner
 	ldd mazeoffx
 	subd #$0a
-	std V50
+	std V50		; bat x position
 	ldd mazeoffy
 	subd #$0a
-	std V52
+	std V52		; bat y position
 	lbsr random
 	bmi LDAC1
-	ldd V50
+	ldd V50		; bat x position
 	addd #$93
-	std V50
+	std V50		; bat x position
 LDAC1	lbsr random
 	bmi LDACD
-	ldd V52
+	ldd V52		; bat y position
 	addd #$93
-	std V52
+	std V52		; bat y position
+
 LDACD	puls pc,u,b,a
 
 LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
@@ -2031,6 +2041,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 	fdb $c003 ; W......W
 	fdb $0000 ; ........
 	fdb $0000 ; ........
+
 	fdb $c003 ; W......W
 	fdb $c003 ; W......W
 	fdb $f3cf ; WW.WW.WW
@@ -2083,44 +2094,45 @@ LDB2E	deca			; timeout (count down this time)
 	bne LDB1C		; brif we haven't wrapped
 LDB35	puls pc,u,b,a		; restore registers and return
 
-LDB37	lda #$ff
+* Bat chases player, kills him if collision
+LDB37	lda #$ff		; assume player is dead
 	sta VD5			; player dead flag
 	ldb curposx
 	clra
 	addd mazeoffx
 	subd #4
-	cmpd V50
+	cmpd V50		; bat x position
 	beq LDB5E
 	blt LDB55
-	clr VD5			; player dead flag
-	ldd V50
+	clr VD5			; player not dead
+	ldd V50			; bat x position
 	addd #1
-	std V50
+	std V50			; bat x position
 	bra LDB5E
 LDB55	ldd V50
-	clr VD5			; player dead flag
+	clr VD5			; player not dead
 	subd #1
-	std V50
+	std V50			; bat x position
 LDB5E	ldb curposy
 	clra
 	addd mazeoffy
 	subd #1
-	cmpd V52
+	cmpd V52		; bat y position
 	beq LDB81
 	blt LDB78
-	ldd V52
+	ldd V52		; bat y position
 	addd #1
-	std V52
-	clr VD5			; player dead flag
+	std V52		; bat y position
+	clr VD5			; player not dead
 	bra LDB81
-LDB78	ldd V52
+LDB78	ldd V52		; bat y position
 	subd #1
 	clr VD5			; player dead flag
 	std V52
 LDB81	rts
 
 * PLAYER DIED
-LDB82	lda #$0a
+LDB82	lda #10		; bleep 10x
 	pshs a
 LDB86	lbsr LDAEF
 	dec ,s
@@ -2183,7 +2195,7 @@ LDBC2	ldd ,u
 	bne LDC02	; if so, monster can't see player
 
 * Player is inside aggro area: chase player
-	clr V5C
+	clr V5C		; reset bat creation timer
 	lbsr LDD08	; chase player
 	tst 8,u		; spider vs fireball
 	beq LDC28
@@ -2507,13 +2519,6 @@ LDEB0	lda VD8			; get Y render coordinate
 	inc curposy
 	inc curposy
 
-	;lbsr random		; get a random value
-	;lsrb			; keep bits 1,2
-	;andb #3
-	;lslb			; double it for two bytes per coordinate pair
-	;addb #4		; move past portal location
-	;ldd b,u		; fetch portal destination ("random" selection from four choices)
-
 	lda #NPORTALS-1		; choose a random portal destination
 	lbsr rand
 	lsla			; double it for two bytes per coordinate pair
@@ -2570,12 +2575,13 @@ LDF8C	cmpa #$15
 	sta V19
 LDF94	puls a,pc
 
-LDF96	tst V18
-	beq LDF9C
-	dec V18
-LDF9C	tst V19
-	beq LDFA2
-	dec V19
+* Make crystal ball and crown time out eventually
+LDF96	tst V18		; crown active?
+	beq LDF9C	; no
+	dec V18		; decrease time remaining on crown
+LDF9C	tst V19		; crystal ball active?
+	beq LDFA2	; no
+	dec V19		; decrease time remaining on crystal ball
 LDFA2	rts
 
 vermess	fcb 13
