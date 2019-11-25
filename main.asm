@@ -81,7 +81,7 @@ VCB	rmb 2
 VCD	rmb 2
 VCF	rmb 1
 VD0	rmb 1
-VD1	rmb 1
+VD1	rmb 1 ; "walk through walls" flag
 scorep1	rmb 3 ; player one's score
 VD5	rmb 1 ; player dead flag
 VD6	rmb 1
@@ -685,12 +685,11 @@ LCF50	nop			; flag for valid warm start routine
 	andcc #%11101111	; start VSYNC interrupt on IRQ
 
 
- * Seed random number routine
- addd $112	; throw in the BASIC timer
- bne no@	; can't be zero
- ldd #123
-no@
- std randseed
+	* Seed random number routine
+	addd $112		; throw in the BASIC timer
+	bne no@			; can't be zero
+	ldd #123
+no@	std randseed
 
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
@@ -896,7 +895,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1
+	clr VD1			; clear "walk through walls" flag
 	ldu #plr1monsters	; point to player one's monster locations
 	stu monsterptr		; save as monster location pointer
 	ldu #scorep1		; point to player one's score
@@ -943,7 +942,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1
+	clr VD1			; clear "walk through walls" flag
 	ldu #plr2monsters	; point to player two's monster locations
 	stu monsterptr		; set as monster location pointer
 	ldu #scorep2		; point to player two's score
@@ -1051,6 +1050,7 @@ LD24B	stx VC1			; save screen pointer calculated in checkcollision
 	std VC5
 LD253	rts
 
+* Adjust all the coordinates in the explosion queue to compensate for scrolling
 LD254	lda curposx
 	ldx mazeoffx
 	ldy #XQUEUE		; explosion sprite queue
@@ -1142,9 +1142,10 @@ checkcollision lda curposy	; get current vertical position
 	bne LD30F		; brif so
 	bitb $41,x		; do we collide at the next byte two rows down?
 LD30F	pshs cc			; save collision state
-	lda VD1
+	lda VD1			; can walk through walls?
 	inca
-	bne LD31B
+	bne LD31B		; no
+	* walk through walls
 	orcc #4			; set Z (no collision)
 	leas 1,s		; clean stack
 	rts
@@ -1255,6 +1256,7 @@ LD3C5	ldu renderscr		; get start address of render screen
 	ldx #0
 	ldy #0
 
+* Clear screen
 LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 	lda VD7
 	sta PIA1.DA		; tikkatikkatikka sound
@@ -1283,12 +1285,13 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
  ENDC
 	rts
 
+* Fire laser if joystick button pressed
 LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
 	lbne LD495		; brif button not pressed
 	tst VD1
-	lbne LD4C7
-	inc VD1
+	lbne LD4C7		; advance "walk through walls" timer
+	inc VD1			; start timer
 	clr VCF
 	clr VD0
 	lda #$aa		; red
@@ -1360,7 +1363,7 @@ LD487	ldd VCB
 	addd VC9
 	std VC9
 	bra LD474
-LD495	clr VD1
+LD495	clr VD1		; reset "walk through walls" timer
 LD497	rts
 
 LD498	lda VC9
@@ -1385,27 +1388,28 @@ LD498	lda VC9
 	subb #3
 LD4C4	lbra LD54E ; queue an explosion
 
+* Advance "walk through walls" timer
 LD4C7	lda VD1
-	inca
-	beq LD497
+	inca		; count up
+	beq LD497	; but not if it's $ff
 	sta VD1
 	rts
 
-LD4CF	tsta
+* What is this doing?  Has something to do with laser shot line drawing
+LD4CF	tsta		; if positive,
 	blt LD4DC
 	cmpd #$100
-	bge LD4E7
+	bge LD4E7	;	and less than $100,
 	lslb
-	rola
-	bra LD4E4
-LD4DC	cmpd #$ff00
-	ble LD4E7
+	rola		;       	D = 2 * D
+	bra LD4E4	; else
+LD4DC	cmpd #$ff00	
+	ble LD4E7	; 	if greater than $FF00,
 	lslb
-	rola
-LD4E4	andcc #$fd
+	rola		;		D = 2 * D
+LD4E4	andcc #$fd	; clear carry
 	rts
-
-LD4E7	orcc #4
+LD4E7	orcc #4		; set carry
 	rts
 
 LD4EA	fcb $c0,$30,$0c,$03	; pixel masks within byte
@@ -2051,6 +2055,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 	fdb $0000 ; ........
 	fdb $0000 ; ........
 
+* scoring bleep
 LDAEF	pshs u,b,a
 	clrb		; enable sound output from DAC
 	lbsr LDFD1
