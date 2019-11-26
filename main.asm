@@ -90,7 +90,7 @@ VD8	rmb 1
 VD9	rmb 1
 VDA	rmb 1	; treasure count
 collision rmb 1 ; collision detection flag
-VDC	rmb 1
+VDC	rmb 1 ; number of treasures remaining
 
 * hitbox
 hity1	rmb 1 ; miny
@@ -813,7 +813,7 @@ LD05E	lbsr setstartpos	; set default start position
 	lbsr drawmazeboth	; draw maze on both screens
 	clr texttty		; enable the "tty" effect
 	lda #$ff
-	sta VD1
+	sta VD1			; prevent laser firing during attract mode?
 	sta V03
 	lbsr LD144
 	lbsr LD1AC
@@ -916,6 +916,7 @@ LD13A	lbsr LD1BE		; common play loop
 	tst VD5			; dead yet?
 	beq LD13A		; keep going
 	lbsr LDB82		; player death
+
 LD144	ldu #plr1state		; point to player one's state data
 	lda curposx		; fetch current horizontal screen position
 	ldb curposy		; fetch current vertical screen position
@@ -983,20 +984,20 @@ LD1BE	lbsr swaprender		; switch screens
 	lbsr clearrender	; clear workspace
 	lbsr drawvert		; draw walls
 	lbsr drawhoriz
-	bsr LD1FF		; adjust player position
+	bsr LD1FF		; move player
 	bsr LD1FF
-	lbsr LD5C4
-	lbsr LD829
-	lbsr LDA93
-	lbsr LDB96		; chase player
+	lbsr LD5C4		; render queued explosions
+	lbsr LD829		; draw treasures
+	lbsr LDA93		; create bat if needed
+	lbsr LDB96		; monsters chase player
 	lda VD5			; player dead flag
 	pshs a
-	lbsr LD9EF
+	lbsr LD9EF		; draw bat if necessary
 	lda VD5
-	ora ,s+
+	ora ,s+			; dead from monster OR dead from bat?
 	sta VD5			; player dead flag
-	lbsr LD40B
-	lbsr LDE58
+	lbsr LD40B		; fire laser if joystick button pressed
+	lbsr LDE58		; draw portals
 	lbra LD375		; animate running man and return
 
 * ADJUST PLAYER POSITION
@@ -1692,6 +1693,7 @@ LD6E9	rts
  include treasures.asm
  ENDC
 
+* Draw treasures and handle treasure collisions
 LD829	lda curposy
 	ldb curposx
 	* Set up hitbox for player collision with treasures
@@ -1701,7 +1703,7 @@ LD829	lda curposy
 	subb #4
 	sta hitx1
 	stb hity1
-	clr VDC
+	clr VDC		; number of treasures remaining
 	ldu objlistptr
 	lda VDA		; number of treasures
 	pshs a
@@ -1743,7 +1745,7 @@ LD841	ldb ,u		; treasure x
 	cmpb hity2
 	bgt LD8A9
 
-* Treasure collected!
+* Collision with player: treasure collected!
 	clra
 	clrb
 	ldu VBF
@@ -1760,7 +1762,7 @@ LD8A2	lbsr showscore
 	ldu VBF
 	bra LD8BF
 
-* Treasure destroyed by laser
+* Collision with explosion: treasure destroyed by laser
 LD8A9	lbsr drawsprite		; draw treasure
 	beq LD8BD
 	clra			; delete treasure
@@ -1777,8 +1779,9 @@ LD8BF	leau 4,u
 	lbne LD841
 	puls a
 
-	tst VDC
+	tst VDC			; any treasures left?
 	bne LD8E4
+* No treasures remaining: victory!
 	ldu objlistptr
 	lbsr buildobjlist
 	ldu monsterptr
