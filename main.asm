@@ -10,6 +10,12 @@
 ; 1C00		explosion sprite queue
 ; 2000		code
 
+ IFDEF MCUSTOM
+ include map/constants.asm
+ ELSE
+ include constants.asm
+ ENDC
+
 PIA0.DA	equ $ff00
 PIA0.CA	equ $ff01
 PIA0.DB	equ $ff02
@@ -26,12 +32,10 @@ RSTVEC	equ $72
 
 *** SEGMENT 1 ***
 
-; These are the variables used by the game.
-
 	setdp 0
 
 monsterptr rmb 2 ; pointer to current player's monster locations
-portaloff rmb 1 ; nonzero means portals are currently disabled
+portaloff rmb 1	; nonzero means portals are currently disabled
 V03	rmb 2
 V05	rmb 2
 V07	rmb 2
@@ -42,20 +46,18 @@ V0F	rmb 2
 V11	rmb 2
 V13	rmb 2
 V15	rmb 1
-V18	rmb 1
-V19	rmb 1
+V18	rmb 1 ; is crown active?
+V19	rmb 1 ; is crystal ball active?
 V1A	rmb 1
 V4F	rmb 1
-V50	rmb 2
-V52	rmb 2
-V5C	rmb 1
-V5D	rmb 2
-V5F	rmb 2
-V68	rmb 1
-V69	rmb 1
-V8D	rmb 1
-V8E	rmb 1
-randseed rmb 1 ; the "random seed"
+V50	rmb 2 ; bat x position
+V52	rmb 2 ; bat y position
+V5C	rmb 1 ; bat creation timer
+V5D	rmb 2 ; target coord x
+V5F	rmb 2 ; target coord y
+V68	rmb 2 ; object coord x
+V8D	rmb 1 ; object coord y
+randseed rmb 2 ; the "random seed"
 mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
 curposx	rmb 2 ; current player horizontal screen position
@@ -79,20 +81,23 @@ VCB	rmb 2
 VCD	rmb 2
 VCF	rmb 1
 VD0	rmb 1
-VD1	rmb 1
+VD1	rmb 1 ; "walk through walls" flag
 scorep1	rmb 3 ; player one's score
-VD5	rmb 1
+VD5	rmb 1 ; player dead flag
 VD6	rmb 1
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1
 VD9	rmb 1
 VDA	rmb 1	; treasure count
 collision rmb 1 ; collision detection flag
-VDC	rmb 1
-VDD	rmb 1
-VDE	rmb 1
-VDF	rmb 1
-VE0	rmb 1
+VDC	rmb 1 ; number of treasures remaining
+
+* hitbox
+hity1	rmb 1 ; miny
+hity2	rmb 1 ; maxy
+hitx1	rmb 1 ; minx
+hitx2	rmb 1 ; maxx
+
 numplayers	rmb 1 ; number of players in the game
 scrollstep	rmb 2 ; step/direction for maze scrolling
 plr1state	rmb 6 ; player two game state (6 bytes)
@@ -102,31 +107,13 @@ scoreptr	rmb 2 ; pointer to current player's score
 texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
-VF9	rmb 2
+VF9	rmb 2 ; bat sprite (or zero if bat inactive)
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
 temp	rmb 1
+tick	rmb 1 ; IRQ countdown timer
+tock	rmb 1 ; IRQ countup timer
 
- IFDEF MLASER
-sptr rmb 2
- ENDC
-
-* MASTER MONSTER LIST
-*
-* Each list entry is 9 bytes:
-*	X1	2 bytes
-*	X2	2 bytes
-*	Y1	2 bytes
-*	Y2	2 bytes
-*	ID	1 byte (00 = spider, 20 = fireball)
-*
-*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
-*	25% down from the left and top edges
-*
-*	list ends with $0000
-
-monsters	equ $200	; unpacked monster data (9 bytes x 19 monsters + 2 bytes = 173 bytes)
-				; 339 bytes unused
 
 * SCREEN 1
 *
@@ -141,7 +128,35 @@ SCREEN1		equ $400	; SCREEN 1 (3072 bytes)
 *
 
 SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
-				; 32 bytes unused (useless)
+
+	org $1c00
+
+* EXPLOSION SPRITE QUEUE
+*
+* 8 items of 4 bytes each
+*
+* Each list item is 4 bytes:
+*	sprite	2 bytes (address of pointer to current sprite)
+*	X	1 byte (X coordinate divided by 4)
+*	Y	1 byte (Y coordinate divided by 4)
+
+XQUEUE	rmb 8*4
+
+* MASTER MONSTER LIST
+*
+* Each list entry is 9 bytes:
+*	X1	2 bytes
+*	X2	2 bytes
+*	Y1	2 bytes
+*	Y2	2 bytes
+*	ID	1 byte ($00 = spider, $20 = fireball, $40 = ghost, $60 = skull)
+*
+*	The box defined by (X1, Y1, X2, Y2) is the monster's aggro area, with the monster's initial position
+*	25% down from the left and top edges
+*
+*	list ends with $0000
+
+monsters rmb NMONSTERS*9+2
 
 * PLAYER 1 TREASURE LIST
 *
@@ -150,8 +165,7 @@ SCREEN2		equ $1000	; SCREEN 2 (3072 bytes)
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of treasure sprite)
 
-plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more treasures)
+plr1objlist rmb NTREASURES*4
 
 * PLAYER 1 MONSTER LIST
 *
@@ -159,37 +173,33 @@ plr1objlist	equ $1c20	; player one treasures in the maze (93 x 4 bytes = 372 byt
 *	X	2 bytes
 *	Y	2 bytes
 
-plr1monsters	equ $1db0	; player one monsters in the maze (19 monsters x 4 bytes = 76 bytes)
-				; 20 bytes unused (room for 5 more monsters)
+plr1monsters rmb NMONSTERS*4
 
-* PLAYER 1 TREASURE LIST
+* PLAYER 2 TREASURE LIST
 *
 * Each list item is 4 bytes:
 *	X	1 byte (X coordinate divided by 4)
 *	Y	1 byte (Y coordinate divided by 4)
 *	sprite	2 bytes (address of treasure sprite)
 
-plr2objlist	equ $1e10	; player two treasures in the maze (93 treasures x 4 bytes = 372 bytes)
-				; 28 bytes unused (room for 7 more treasures)
-
+plr2objlist rmb NTREASURES*4
+	
 * PLAYER 2 MONSTER LIST
 *
 * Each list entry is 4 bytes:
 *	X	2 bytes
 *	Y	2 bytes
 
-plr2monsters	equ $1fa0	; player two monsters in the maze (19 monsters x 4 bytes = 76 bytes)
-				; 20 bytes unused (room for 5 more monsters)
+plr2monsters	 rmb NMONSTERS*4
 
-	org $2000
+	org $3000
 
 START	orcc #$50			; make sure interrupts are disabled
 	clr $ff40			; make sure all FDC drive motors and selects are off
 	lbra LCD46			; launch main initialization sequence
 
-; fetch in various source files
-                include sound.asm       ; fetch sound handling routines
-                include joystick.asm    ; fetch joystick handling routines
+	include sound.asm       ; fetch sound handling routines
+	include joystick.asm    ; fetch joystick handling routines
 
 ; Render the vertical lines of the map
 drawvert leau LC34A,pcr		; point to short circuit offset table for vertical lines
@@ -342,6 +352,9 @@ LC100	leau 2,u		; move to next set of line data
 LC104	rts
 
 * Draw horizontal line
+* A: beginning X coordinate
+* B: ending X coordinate
+* X: Y coordinate
 LC105	pshs a			; save left coordinate
 	exg x,d			; save coordinates and get vertical offset
 	tfr b,a			; put vertical coordinate in A
@@ -390,7 +403,8 @@ LC148	rts
 
 ; explosion sprites
 
-LC14B	fcb explosion1-*
+explosion
+	fcb explosion1-*
 	fcb explosion2-*
 	fcb explosion3-*
 	fcb explosion4-*
@@ -467,7 +481,7 @@ plr2mess fcb 10
 	fcc 'PLAYER TWO'
 
 ToRmess	fcb 13
-	fcc 'TEMPLE OF ROM II'
+	fcc 'TEMPLE OF ROM'
 
 gameovermess fcb 9
 	fcc 'GAME OVER'
@@ -544,7 +558,12 @@ fontdata fcb $f0,$5f,$17,$80		; A
 
 	fcb $00,$00,$00,$00		; space
 
+ IFDEF MCUSTOM
+ include map/lines.asm
+ ELSE
  include lines.asm
+ ENDC
+
 
 *** SEGMENT 2 ***
 
@@ -552,7 +571,7 @@ LCD46	lbra LCF50
 
 	include music.asm
 
-; This generates a pseudo random sequence with period 128.
+; This generates a pseudo random sequence with period 128 in B
 random	pshs a			; save registers
 	lda randseed		; get current random seed
 	ldb #123		; get fudge factor
@@ -562,30 +581,50 @@ random	pshs a			; save registers
 	puls a			; restore registers
 	rts
 
+* Better random routine from Steve Bjork
+lrandom
+	clr  ,-s	; clear holder of LFSB
+	lda randseed    ; get high byte of 16-bit random seed
+	anda #%10110100	; get the bits check in shifting
+	ldb #6		; use the top 6 bits for xoring
+loop@
+	lsla            ; move top bit into the carry flag
+	bcc no@		; skip incing the LFSB if no carry
+	inc ,s		; add one to the LFSB test holder
+no@
+	decb            ; count down loop counter
+	bne loop@       ; loop if all bits are not done
+	lda ,s+         ; get LFSB off of stack
+	inca            ; invert lower bit by adding one
+	rora            ; move bit 0 into carry
+	rol randseed+1  ; shift carry into bit 0
+	rol randseed    ; one more shift to complete the 16 bit shift
+	ldd randseed    ; load up a and b with the new random seed
+	rts
+
+* Generate random number between zero and A
+rand
+	pshs d
+	lbsr lrandom
+	puls a
+	mul
+	puls b,pc
+
 ; Wait for VSYNC
-
 WaitVSYNC
-  pshs a
-  lda #0
-  sta $ff9a
-	tst PIA0.DB	; dismiss interrupt 
-LCF0B	tst PIA0.CB	; wait for interrupt
-	bge LCF0B
-  lda #100
-  sta $ff9a
-  puls a,pc
+	pshs a
+loop@	lda tick
+	bne loop@
+	lda #5
+	sta tick
+	sync
+	puls a,pc
 
-;WaitVSYNC
-;	tst PIA0.DB	; dismiss interrupt 
-;LCF0B	tst PIA0.CB	; wait for interrupt
-;	bge LCF0B
-;	rts
-
-; Clear screen one header (to colour #3)
+; Clear screen one header (to color #3)
 clrheader pshs y,x,b,a		; save registers
 	ldx #SCREEN1		; point to start of screen #1
 	ldy #$80		; set up to clear 256 bytes (2 bytes at a time)
-	ldd #$ffff		; set up to use colour #3
+	ldd #$ffff		; set up to use color #3
 clrheader0 std ,x++		; clear out two bytes
 	leay -1,y		; done yet?
 	bne clrheader0		; brif not
@@ -603,17 +642,15 @@ dupheader0 ldd ,--x		; copy two bytes from screen #1 to screen #2
 	puls y,x,b,a		; restore registers
 	rts
 
-* Entry:
-*  X
-*  Y
-*  D
-* Exit:
-*  CC
+* Is player inside aggro area?
+; D: player coord
+; X: aggro box left/top
+; Y: aggro box right/bottom
 LCF3C	pshs b,a
 	cmpx ,s
 	bhi LCF4B
 	cmpy ,s
-	bcs LCF4B
+	blo LCF4B
 	orcc #4
 	bra LCF4D
 LCF4B	andcc #$fb
@@ -631,12 +668,29 @@ LCF50	nop			; flag for valid warm start routine
 	lda #$55		; flag for reset vector as valid
 	lds #$3ff		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
-	lda #$f8		; code for 2 colour 256px graphics, colour set 1
+	lda #$f8		; code for 2 color 256px graphics, color set 1
 	sta PIA1.DB		; set VDG graphics mode
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
- IFDEF MLASER
-	lbsr InitLaser
- ENDC
+
+	* init VSYNC interrupt
+	clr tick
+	leau IRQ,pcr		; IRQ interrupt vector
+	stu $10d
+	lda PIA0.CA		; turn off HSYNC
+	anda #$fe
+	sta PIA0.CA
+	lda PIA0.CB		; turn on VSYNC
+	ora #$01
+	sta PIA0.CB
+	andcc #%11101111	; start VSYNC interrupt on IRQ
+
+
+	* Seed random number routine
+	addd $112		; throw in the BASIC timer
+	bne no@			; can't be zero
+	ldd #123
+no@	std randseed
+
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
 	lbsr Coco3RGB 		; default to RGB no artifacting
@@ -656,6 +710,7 @@ LCF85	ldd ,x			; are we at the end of the table?
 	bra LCF85		; go handle another
 
 LCF92	std ,y			; save end of table flag
+
 LCF94	lbsr LD531
 	clr V03
 	ldu #plr1objlist	; point to player one's treasure list
@@ -666,7 +721,15 @@ LCF94	lbsr LD531
 	lbsr LDCE6		; set default locations
 	ldu #plr2monsters	; point to player two's monster locations
 	lbsr LDCE6		; set default locations
-	lbsr setstartpos	; set default start versions
+
+	lbsr setstartpos	; set default attract mode scrolling start
+	pshs d
+	ldd #MINX+((MAXX-MINX)/2)-(128/2)
+	std mazeoffx
+	ldd #MINY+((MAXY-MINY)/2)-(96/2)
+	std mazeoffy
+	puls d
+
 	clr VD7
 	ldd #1			; set scroll direction to down-right
 	std scrollstep
@@ -750,7 +813,7 @@ LD05E	lbsr setstartpos	; set default start position
 	lbsr drawmazeboth	; draw maze on both screens
 	clr texttty		; enable the "tty" effect
 	lda #$ff
-	sta VD1
+	sta VD1			; prevent laser firing during attract mode?
 	sta V03
 	lbsr LD144
 	lbsr LD1AC
@@ -806,13 +869,13 @@ LD0CD	bsr LD0EE		; run game loop for player one
 	lbsr LD156		; run game loop for player two
 LD0D8	rts
 
-setstartpos	pshs a,b	; save registers
-	ldd #62*256+46		; starting player position (62,46)
+setstartpos pshs a,b		; save registers
+	ldd #62*256+46		; starting player position (62, 46) (center of screen minus 2)
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
-	ldd #398		; set starting screen position (X)
+	ldd #STARTX		; set player position (X) entry point
 	std mazeoffx
-	ldd #291		; set starting screen position (Y)
+	ldd #STARTY		; set player position (Y) entry point
 	std mazeoffy
 	puls a,b,pc		; restore registers and return
 
@@ -830,9 +893,9 @@ LD0EE	ldu #plr1state		; point to player one state
 	lbsr LD9EA
 	lbsr LD531
 	clr portaloff		; mark all portals as active
-	clr V18
-	clr V19
-	clr VD1
+	clr V18			; crown inactive
+	clr V19			; crystal ball inactive
+	clr VD1			; clear "walk through walls" flag
 	ldu #plr1monsters	; point to player one's monster locations
 	stu monsterptr		; save as monster location pointer
 	ldu #scorep1		; point to player one's score
@@ -844,7 +907,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clra			; stop maze scroll
 	clrb
 	std scrollstep
-	clr VD5
+	clr VD5			; player dead flag
 	lbsr drawmazeboth	; draw maze on both screens
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49		; 4 part music routine
@@ -853,6 +916,7 @@ LD13A	lbsr LD1BE		; common play loop
 	tst VD5			; dead yet?
 	beq LD13A		; keep going
 	lbsr LDB82		; player death
+
 LD144	ldu #plr1state		; point to player one's state data
 	lda curposx		; fetch current horizontal screen position
 	ldb curposy		; fetch current vertical screen position
@@ -877,9 +941,9 @@ LD156	ldu #plr2state		; point to player two's state data
 	lbsr LD9EA
 	lbsr LD531
 	clr portaloff		; mark all portals as active
-	clr V18
-	clr V19
-	clr VD1
+	clr V18			; crown inactive
+	clr V19			; crystal ball inactive
+	clr VD1			; clear "walk through walls" flag
 	ldu #plr2monsters	; point to player two's monster locations
 	stu monsterptr		; set as monster location pointer
 	ldu #scorep2		; point to player two's score
@@ -891,7 +955,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	clra			; stop maze scroll
 	clrb
 	std scrollstep
-	clr VD5
+	clr VD5			; player dead flag
 	lbsr drawmazeboth	; draw maze on both screens
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49		; 4 part music routine
@@ -912,28 +976,28 @@ LD1AC	ldu #plr2state		; point to player two state
 
 * COMMON PLAY LOOP
 LD1BE	lbsr swaprender		; switch screens
+	lbsr LD254		; adjust explosion queue for screen scrolling
 	lbsr LD254
 	lbsr LD254
-	lbsr LD254
-	lbsr checkcssel		; check for colour set selection keys
-	lbsr LDF96
+	lbsr checkcssel		; check for color set selection keys
+	lbsr LDF96		; age crystal ball and crown
 	lbsr clearrender	; clear workspace
-	lbsr drawvert
+	lbsr drawvert		; draw walls
 	lbsr drawhoriz
+	bsr LD1FF		; move player
 	bsr LD1FF
-	bsr LD1FF
-	lbsr LD5C4
-	lbsr LD829
-	lbsr LDA93
-	lbsr LDB96
-	lda VD5
+	lbsr LD5C4		; render queued explosions
+	lbsr LD829		; draw treasures
+	lbsr LDA93		; create bat if needed
+	lbsr LDB96		; monsters chase player
+	lda VD5			; player dead flag
 	pshs a
-	lbsr LD9EF
+	lbsr LD9EF		; draw bat if necessary
 	lda VD5
-	ora ,s+
-	sta VD5
-	lbsr LD40B
-	lbsr LDE58
+	ora ,s+			; dead from monster OR dead from bat?
+	sta VD5			; player dead flag
+	lbsr LD40B		; fire laser if joystick button pressed
+	lbsr LDE58		; draw portals
 	lbra LD375		; animate running man and return
 
 * ADJUST PLAYER POSITION
@@ -987,9 +1051,10 @@ LD24B	stx VC1			; save screen pointer calculated in checkcollision
 	std VC5
 LD253	rts
 
+* Adjust all the coordinates in the explosion queue to compensate for scrolling
 LD254	lda curposx
 	ldx mazeoffx
-	ldy #$1c00		; explosion sprite queue
+	ldy #XQUEUE		; explosion sprite queue
 	cmpa #$0f
 	bhi LD27A
 * SCROLL PLAYER LEFT
@@ -1078,9 +1143,10 @@ checkcollision lda curposy	; get current vertical position
 	bne LD30F		; brif so
 	bitb $41,x		; do we collide at the next byte two rows down?
 LD30F	pshs cc			; save collision state
-	lda VD1
+	lda VD1			; can walk through walls?
 	inca
-	bne LD31B
+	bne LD31B		; no
+	* walk through walls
 	orcc #4			; set Z (no collision)
 	leas 1,s		; clean stack
 	rts
@@ -1190,43 +1256,23 @@ LD3C5	ldu renderscr		; get start address of render screen
 	clrb
 	ldx #0
 	ldy #0
- IFNDEF MLASER
-	sts VBF			; save stack pointer
-	lds #0			; use S for clearing too
-LD3DB	pshu s,y,x,dp,b,a	; 9 bytes x 1 = 9 bytes
+
+* Clear screen
+LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 	lda VD7
 	sta PIA1.DA		; tikkatikkatikka sound
 	clra
-	pshu s,y,x,dp,b,a	; 9 bytes x 7 = 63 bytes
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
+	pshu d,x,y,dp
 	clr PIA1.DA		; tikkatikkatikka sound
-	pshu s,y,x,dp,b,a	; 9 bytes x 6 = 56 bytes
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu s,y,x,dp,b,a
-	pshu b,a		; 2 bytes x 1 = 2 bytes
-	cmpu endclear		; have we reached the start of the screen?
-	bgt LD3DB		; brif not, do another 128 bytes
-	lds VBF			; restore stack pointer
- ELSE
-LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
-	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
 	pshu d,x,y,dp
@@ -1240,12 +1286,13 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
  ENDC
 	rts
 
+* Fire laser if joystick button pressed
 LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
 	lbne LD495		; brif button not pressed
 	tst VD1
-	lbne LD4C7
-	inc VD1
+	lbne LD4C7		; advance "walk through walls" timer
+	inc VD1			; start timer
 	clr VCF
 	clr VD0
 	lda #$aa		; red
@@ -1297,9 +1344,6 @@ LD44F	std VCD
 	clrb
 	stb VC8
 	stb VCA
- IFDEF MLASER
-	lbsr FireLaser
- ENDC
 	lda #$f0	; tikkatikkatikka sound
 	sta VD7
 LD474	lda VC9
@@ -1320,12 +1364,12 @@ LD487	ldd VCB
 	addd VC9
 	std VC9
 	bra LD474
-LD495	clr VD1
+LD495	clr VD1		; reset "walk through walls" timer
 LD497	rts
 
 LD498	lda VC9
 	ldb VC7
-	tst V18
+	tst V18	   ; is crown active?
 	beq LD4C4
 	pshs b,a
 	adda #3
@@ -1345,27 +1389,28 @@ LD498	lda VC9
 	subb #3
 LD4C4	lbra LD54E ; queue an explosion
 
+* Advance "walk through walls" timer
 LD4C7	lda VD1
-	inca
-	beq LD497
+	inca		; count up
+	beq LD497	; but not if it's $ff
 	sta VD1
 	rts
 
-LD4CF	tsta
+* What is this doing?  Has something to do with laser shot line drawing
+LD4CF	tsta		; if positive,
 	blt LD4DC
 	cmpd #$100
-	bge LD4E7
+	bge LD4E7	;	and less than $100,
 	lslb
-	rola
-	bra LD4E4
-LD4DC	cmpd #$ff00
-	ble LD4E7
+	rola		;       	D = 2 * D
+	bra LD4E4	; else
+LD4DC	cmpd #$ff00	
+	ble LD4E7	; 	if greater than $FF00,
 	lslb
-	rola
-LD4E4	andcc #$fd
+	rola		;		D = 2 * D
+LD4E4	andcc #$fd	; clear carry
 	rts
-
-LD4E7	orcc #4
+LD4E7	orcc #4		; set carry
 	rts
 
 LD4EA	fcb $c0,$30,$0c,$03	; pixel masks within byte
@@ -1399,7 +1444,7 @@ pset	cmpa #$5f	; is the Y coordinate off bottom of screen?
 	anda ,x		; clear pixel in data byte
 	bitb ,x		; was the pixel set?
 	bne LD524	; brif so - flag collision
-	andb color	; get correct pixel data in the all colour byte
+	andb color	; get correct pixel data in the all color byte
 	sta ,x		; save cleared pixel data
 	orb ,x		; merge it with new pixel data
 	stb ,x		; set screen data
@@ -1407,7 +1452,7 @@ pset	cmpa #$5f	; is the Y coordinate off bottom of screen?
 	rts
 
 LD524	inc collision	; flag collision
-	andb color	; get correct pixel data in all colour byte
+	andb color	; get correct pixel data in all color byte
 	sta ,x		; save cleared pixel data
 	orb ,x		; merge it with new pixel data
 	stb ,x		; set screen data
@@ -1417,14 +1462,14 @@ LD52E	andcc #$fb	; flag collision (Z clear)
 * Clear explosion sprite queue
 LD531	clra
 	clrb
-	std $1c00
-	std $1c04
-	std $1c08
-	std $1c0c
-	std $1c10
-	std $1c14
-	std $1c18
-	std $1c1c
+	std XQUEUE
+	std XQUEUE+4
+	std XQUEUE+8
+	std XQUEUE+12
+	std XQUEUE+16
+	std XQUEUE+20
+	std XQUEUE+24
+	std XQUEUE+28
 	clr VD7
 	rts
 
@@ -1437,15 +1482,15 @@ LD54E	tfr d,y
 	bls LD57C
 	cmpb #$7f
 	bhi LD57C
-	ldu #$1c00
+	ldu #XQUEUE	; explosion table
 	ldx #8
 LD562	ldd ,u		; find blank slot in 8 slots of 4 bytes each
 	beq LD56E
-	leau 4,u
+	leau 4,u	; found a blank slot
 	leax -1,x
 	bne LD562
 	bra LD57C
-LD56E	leax LC14B,pcr	; queue explosion, starting with first sprite
+LD56E	leax explosion,pcr	; queue explosion, starting with first sprite
 	stx ,u++
 	tfr y,d
 	suba #4
@@ -1475,9 +1520,9 @@ LD58D	ldd ,s			; fetch current pixel data
 	rol ,s
 	rola
 	beq LD5AB		; brif pixel is not set
-	leay colors,pcr		; point to all pixel colour masks
-	lda a,y			; get colour mask for this colour
-	sta color		; save colour mask for rendering
+	leay colors,pcr		; point to all pixel color masks
+	lda a,y			; get color mask for this color
+	sta color		; save color mask for rendering
 	ldd 4,s			; get render coordinates
 	lbsr pset		; render pixel on screen
 LD5AB	inc 5,s			; bump X render coordinate
@@ -1492,11 +1537,11 @@ LD5BB	leas 6,s		; deallocate local storage
 	tst collision		; set Z if no collision
 	rts
 
-colors	fcb $00,$55,$aa,$ff	; all pixel colour masks for colours 0, 1, 2, 3
+colors	fcb $00,$55,$aa,$ff	; all pixel color masks for colors 0, 1, 2, 3
 
 ; render all queued explosions
 
-LD5C4	ldu #$1c00 ; explosion table
+LD5C4	ldu #XQUEUE ; explosion table
 	lda #8
 	pshs a
 	pshs u
@@ -1504,24 +1549,24 @@ LD5CD	ldu ,s	; u points to explosion table
 	ldd ,s  ; address of explosion table
 	addd #4 ; advance to next entry
 	std ,s
-	ldx ,u ; address of sprite
-	beq LD5F4	; on last sprite
+	ldx ,u ; address of sprite if any
+	beq LD5F4 ; skip empty queue item
 	ldd ,u 
-	addd #1
+	addd #1 ;advance to next sprite
 	std ,u
 	ldx ,u
 	ldb ,x
-	beq LD5F0
+	beq LD5F0 ; this explosion is done, clear this entry
 	abx
 	ldd 2,u ; get coordinates
 	tfr x,u ; get sprite pointer
-	bsr drawsprite
+	bsr drawsprite ; draw explosion sprite
 	bra LD5F4
-LD5F0	clra
+LD5F0	clra	; clear queue entry
 	clrb
 	std ,u
 LD5F4	dec 2,s
-	bne LD5CD
+	bne LD5CD ; next queue entry
 	leas 3,s
 	rts
 
@@ -1642,23 +1687,29 @@ LD6DD	ldd ,y++		; get coordinates
 	bra LD6DD		; go see if there's another of this treasure type
 LD6E9	rts
 
-	include treasures.asm
+ IFDEF MCUSTOM
+ include map/treasures.asm
+ ELSE
+ include treasures.asm
+ ENDC
 
+* Draw treasures and handle treasure collisions
 LD829	lda curposy
 	ldb curposx
-	sta VE0
-	stb VDE
+	* Set up hitbox for player collision with treasures
+	sta hitx2
+	stb hity2
 	suba #4
 	subb #4
-	sta VDF
-	stb VDD
-	clr VDC
+	sta hitx1
+	stb hity1
+	clr VDC		; number of treasures remaining
 	ldu objlistptr
-	lda VDA
+	lda VDA		; number of treasures
 	pshs a
-LD841	ldb ,u
-	beq LD8BF
-	inc VDC
+LD841	ldb ,u		; treasure x
+	beq LD8BF	; treasure already collected
+	inc VDC		; number of remaining treasures
 	clra
 	lslb
 	rola
@@ -1666,11 +1717,11 @@ LD841	ldb ,u
 	rola
 	subd mazeoffx
 	cmpd #$fffa
-	blt LD8BF
+	blt LD8BF	; offscreen
 	cmpd #$7f
-	bgt LD8BF
+	bgt LD8BF	; offscreen
 	stb VD9
-	ldb 1,u
+	ldb 1,u		; treasure y
 	clra
 	lslb
 	rola
@@ -1678,21 +1729,23 @@ LD841	ldb ,u
 	rola
 	subd mazeoffy
 	cmpd #2
-	blt LD8BF
+	blt LD8BF	; offscreen
 	cmpd #$5f
-	bgt LD8BF
+	bgt LD8BF	; offscreen
 	stu VBF
 	ldu 2,u
 	stb VD8
 	ldd VD8
-	cmpa VDF
+	cmpa hitx1
 	blt LD8A9
-	cmpa VE0
+	cmpa hitx2
 	bgt LD8A9
-	cmpb VDD
+	cmpb hity1
 	blt LD8A9
-	cmpb VDE
+	cmpb hity2
 	bgt LD8A9
+
+* Collision with player: treasure collected!
 	clra
 	clrb
 	ldu VBF
@@ -1701,53 +1754,58 @@ LD841	ldb ,u
 	lda -1,u
 	lbsr LDF80
 	lbsr addscore
-	ldd VF9
+	ldd VF9			; does the bat exist?
 	beq LD8A2
 	lda -1,u
-	lbsr addscore
+	lbsr addscore		; double points if the bat is chasing you
 LD8A2	lbsr showscore
 	ldu VBF
 	bra LD8BF
-LD8A9	lbsr drawsprite
+
+* Collision with explosion: treasure destroyed by laser
+LD8A9	lbsr drawsprite		; draw treasure
 	beq LD8BD
-	clra
+	clra			; delete treasure
 	clrb
 	std [VBF]
 	ldd VD8
 	adda #4
 	addb #4
-	lbsr LD54E ; queue an explosion
+	lbsr LD54E		; queue an explosion
 LD8BD	ldu VBF
+
 LD8BF	leau 4,u
-	dec ,s
+	dec ,s			; next treasure
 	lbne LD841
 	puls a
-	tst VDC
+
+	tst VDC			; any treasures left?
 	bne LD8E4
+* No treasures remaining: victory!
 	ldu objlistptr
 	lbsr buildobjlist
 	ldu monsterptr
-	lbsr LDCE6
-	lbsr setstartpos
+	lbsr LDCE6		; initialize monster home positions
+	lbsr setstartpos	; starting position for start of turn
 	lbsr LDFD7
 	leau LCE2B,pcr		; opening tune
 	lbsr LCD49
 LD8E4	rts
 
-swaprender ldd renderscr	; get start address of current render screen
+swaprender
+	lbsr WaitVSYNC		; wait for VSYNC
+	ldd renderscr		; get start address of current render screen
 	cmpd #SCREEN1		; screen number 1?
 	bne LD8FD		; brif not
-	ldd #SCREEN2		; set render address to screen #2
-	std renderscr
-	lbsr WaitVSYNC		; wait for VSYNC
 	sta SAM+9		; set SAM to display screen #1
 	sta SAM+12
-	bra LD90B
-LD8FD	ldd #SCREEN1		; set render address to screen #1
+	ldd #SCREEN2		; set render address to screen #2
 	std renderscr
-	lbsr WaitVSYNC		; wait for VSYNC
-	sta SAM+13		; set SAM to display screen #2
-	sta SAM+8
+	rts
+LD8FD	sta SAM+8		; set SAM to display screen #2
+	sta SAM+13
+	ldd #SCREEN1		; set render address to screen #1
+	std renderscr
 LD90B	rts
 
 ; Render a string at the top of both graphics screens. The string will be centered.
@@ -1795,14 +1853,14 @@ LD959	cmpb ,y+		; are we at the right index point in the font?
 LD961	ldd 3,s			; get render coordinates
 	lbsr drawglyph		; render character to screen
 	lbsr dupheader		; copy rendered text to second screen
-	lbsr checkcssel		; check colour set selection keys
+	lbsr checkcssel		; check color set selection keys
 	lbsr dobleep		; do the bleep if required
 	ldd 1,s			; get string pointer
 	addd #1			; move to next character
 	std 1,s			; save new string pointer
 	lda 4,s			; get rendering X coordinate
 	adda #6			; move to next character cell
-	sta 4,s			; save new X cooredinate
+	sta 4,s			; save new X coordinate
 	bra LD92C		; go render another character
 LD97E	leas 5,s		; clean up temporaries
 	puls b,a		; get back render screen pointer
@@ -1819,37 +1877,45 @@ LD98A	leas 5,s		; clear temporaries
 	rts
 
 scrolllong	lda #120	; do 120 iterations
-scrollmaze	pshs a		; save the interation count
+scrollmaze	pshs a		; save the iteration count
 LD99A	dec ,s			; decrement iteration count
 	beq LD9E6		; brif we're done with all the iterations
-	lbsr checkcssel		; check colour set selection keys
+	lbsr checkcssel		; check color set selection keys
 	lbsr swaprender		; swap screens
 	lbsr clearrender	; get a clear canvas
 	lbsr drawvert
 	lbsr drawhoriz
+
+* ATTRACT MODE SCROLL
+	ldd mazeoffx		; get X offset for screen
+	addd scrollstep		; add in step
+	std mazeoffx		; save new screen offset
 	ldd mazeoffy		; get Y offset for screen
 	addd scrollstep		; add in step
 	std mazeoffy		; save new screen offset
-	ldd mazeoffx		; get X offset for screen
-	addd scrollstep		; add in step
-	cmpd #$336		; did we fall off the bottom right?
-	blt LD9C7		; brif not
-	pshs b,a		; save registers
-	clra			; set up to negate the the scroll direction
-	clrb
-	subd scrollstep		; subtract current step from 0 (negates it)
-	std scrollstep		; save new scroll step/direction
-	puls b,a		; restore registers
-LD9C7	cmpd #$5d		; did we fall off the top left?
-	bgt LD9D7		; brif not
-	pshs b,a		; save registers
+
+	ldd mazeoffx
+	cmpd #MAXX-128		; did we pass the right edge?
+	bhs reverse		; brif not / continue scrolling
+	cmpd #MINX		; did we pass the left edge?
+	blo reverse		; brif not / continue scrolling
+
+	ldd mazeoffy
+	cmpd #MAXY-96		; did we pass the bottom edge?
+	bhs reverse		; brif not / continue scrolling
+	cmpd #MINY-4		; did we pass the top edge?
+	blo reverse		; brif not / continue scrolling
+	bra LD9D7
+
+reverse
+	pshs d			; save registers
 	clra			; set up to negate the scroll direction
 	clrb
 	subd scrollstep		; subtract scroll step from 0 (negate it)
 	std scrollstep		; save new step/direction
-	puls b,a		; restore registers
-LD9D7	std mazeoffx		; save new screen offset (X)
-	ldb PIA0.DA		; read keyboard rows
+	puls d			; restore registers
+
+LD9D7	ldb PIA0.DA		; read keyboard rows
 	andb #3			; keep joystick buttons
 	eorb #3			; set so nonzero means pressed
 	beq LD99A		; brif no buttons pressed - do another iteration
@@ -1861,19 +1927,22 @@ LD9E6	puls a			; clean up iteration count
 	clra			; set zero flag - no buttons pressed
 	rts
 
+* deactivate bat
 LD9EA	clra
 	clrb
 	std VF9
 	rts
 
-LD9EF	ldd VF9
-	lbeq LDA92
-	tst V19
-	beq LDA02
-	ldd V50
+LD9EF	ldd VF9		; bat active?
+	lbeq LDA92	; no
+	tst V19		; crystal ball active?
+	beq LDA02	; no
+
+	ldd V50		; crystal ball is active, bat wanders off
 	addd #1
 	std V50
 	bra LDA08
+
 LDA02	lbsr LDB37
 	lbsr LDB37
 LDA08	leau LDACF,pcr	; first bat sprite
@@ -1904,64 +1973,71 @@ LDA19	ldd V52
 	ldd V50
 	subd mazeoffx
 	subd #4
-	stb VDD
+	stb hity1
 	addd #8
-	stb VDE
+	stb hity2
 	ldd V52
 	subd mazeoffy
 	subd #4
-	stb VDF
+	stb hitx1
 	addd #8
-	stb VE0
+	stb hitx2
+
+	* hit by any explosions?
 	lda #8
 	pshs a
-	ldu #$1bfc
+	ldu #XQUEUE-4
 LDA69	dec ,s
 	blt LDA90
 	leau 4,u
 	ldd ,u
 	beq LDA69
 	ldd 2,u
-	cmpa VDF
+	cmpa hitx1
 	bcs LDA69
-	cmpa VE0
+	cmpa hitx2
 	bhi LDA69
-	cmpb VDD
+	cmpb hity1
 	bcs LDA69
-	cmpb VDE
+	cmpb hity2
 	bhi LDA69
 	lbsr LD9EA
 	lda #$10
-	lbsr addscore
+	lbsr addscore	; 100 points for bat
 	lbsr showscore
 LDA90	puls a
 LDA92	rts
 
+* Decide whether or not to create the bat
 LDA93	pshs u,b,a
-	ldd VF9
-	bne LDACD
-	inc V5C
-	bne LDACD
-	tst V19
-	bne LDACD
-	leau LDACF,pcr
-	stu VF9
+	ldd VF9		; bat already exists?
+	bne LDACD	; no
+	inc V5C		; bat creation timer
+	bne LDACD	; not yet
+	tst V19		; crystal ball active?
+	bne LDACD	; yes
+
+* Create the bat
+	leau LDACF,pcr	; bat sprite
+	stu VF9		; activate bat
+	* Place the bat just offscreen at a random corner
 	ldd mazeoffx
 	subd #$0a
-	std V50
+	std V50		; bat x position
 	ldd mazeoffy
 	subd #$0a
-	std V52
+	std V52		; bat y position
 	lbsr random
 	bmi LDAC1
-	ldd V50
+	ldd V50		; bat x position
 	addd #$93
-	std V50
+	std V50		; bat x position
 LDAC1	lbsr random
 	bmi LDACD
-	ldd V52
+	ldd V52		; bat y position
 	addd #$93
-	std V52
+	std V52		; bat y position
+
 LDACD	puls pc,u,b,a
 
 LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
@@ -1972,6 +2048,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 	fdb $c003 ; W......W
 	fdb $0000 ; ........
 	fdb $0000 ; ........
+
 	fdb $c003 ; W......W
 	fdb $c003 ; W......W
 	fdb $f3cf ; WW.WW.WW
@@ -1981,6 +2058,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 	fdb $0000 ; ........
 	fdb $0000 ; ........
 
+* scoring bleep
 LDAEF	pshs u,b,a
 	clrb		; enable sound output from DAC
 	lbsr LDFD1
@@ -2024,44 +2102,45 @@ LDB2E	deca			; timeout (count down this time)
 	bne LDB1C		; brif we haven't wrapped
 LDB35	puls pc,u,b,a		; restore registers and return
 
-LDB37	lda #$ff
-	sta VD5
+* Bat chases player, kills him if collision
+LDB37	lda #$ff		; assume player is dead
+	sta VD5			; player dead flag
 	ldb curposx
 	clra
 	addd mazeoffx
 	subd #4
-	cmpd V50
+	cmpd V50		; bat x position
 	beq LDB5E
 	blt LDB55
-	clr VD5
-	ldd V50
+	clr VD5			; player not dead
+	ldd V50			; bat x position
 	addd #1
-	std V50
+	std V50			; bat x position
 	bra LDB5E
 LDB55	ldd V50
-	clr VD5
+	clr VD5			; player not dead
 	subd #1
-	std V50
+	std V50			; bat x position
 LDB5E	ldb curposy
 	clra
 	addd mazeoffy
 	subd #1
-	cmpd V52
+	cmpd V52		; bat y position
 	beq LDB81
 	blt LDB78
-	ldd V52
+	ldd V52		; bat y position
 	addd #1
-	std V52
-	clr VD5
+	std V52		; bat y position
+	clr VD5			; player not dead
 	bra LDB81
-LDB78	ldd V52
+LDB78	ldd V52		; bat y position
 	subd #1
-	clr VD5
+	clr VD5			; player dead flag
 	std V52
 LDB81	rts
 
 * PLAYER DIED
-LDB82	lda #$0a
+LDB82	lda #10		; bleep 10x
 	pshs a
 LDB86	lbsr LDAEF
 	dec ,s
@@ -2075,156 +2154,182 @@ LDB96	ldu monsterptr
 	pshs u
 	ldu #monsters
 	leau -9,u
+
+	* monster chases player
 	clra
 	ldb curposx
 	addd mazeoffx
-	std V5D
+	std V5D		; target coord x is player x
 	clra
 	ldb curposy
 	addd mazeoffy
-	std V5F
+	std V5F		; target coord y is player y
+
 LDBAF	leau 9,u
-	ldd ,s
+	ldd ,s		; advance pointer to next monster location
 	addd #4
 	std ,s
-	tst VD5
+	tst VD5		; player dead flag
 	beq LDBC2
-	lbsr setstartpos
+
+	lbsr setstartpos ; move player to entry point if dead
 	lbra LDCCD
 
 LDBC2	ldd ,u
 	lbeq LDCCD
 	ldx ,s
-	ldd ,x
-	beq LDBAF
-	std V68
-	ldd 2,x
-	std V8D
-	ldd V5D
+	ldd ,x		; monster x
+	beq LDBAF	; skip dead monster
+	std V68		; object coord x
+	ldd 2,x		; monster y
+	std V8D		; object coord y
+
+* Is the player inside the monster's aggro area?
+	ldd V5D		; target coord x
 	ldx ,u
 	ldy 2,u
 	leay -3,y
-	lbsr LCF3C
+	lbsr LCF3C	; player inside monster's aggro area?
 	bne LDC02
-	ldd V5F
+
+	ldd V5F		; target coord y
 	ldx 4,u
 	ldy 6,u
 	leay -3,y
-	lbsr LCF3C
+	lbsr LCF3C	; player inside monster's aggro area?
 	bne LDC02
-	tst V19
-	bne LDC02
-	clr V5C
-	lbsr LDD08
-	tst 8,u
+
+	tst V19		; is crystal ball active?
+	bne LDC02	; if so, monster can't see player
+
+* Player is inside aggro area: chase player
+	clr V5C		; reset bat creation timer
+	lbsr LDD08	; chase player
+	tst 8,u		; spider vs fireball
 	beq LDC28
-	lbsr LDD08
+	lbsr LDD08	; fireball chases 2x faster
 	bra LDC28
-LDC02	ldd 2,u
+
+* Player is outside monster aggro area: return to home
+LDC02	ldd 2,u		; x2 - x1
 	subd ,u
-	lsra
+	lsra		; divide by 4
 	rorb
 	lsra
 	rorb
-	addd ,u
-	ldx V68
+	addd ,u		; + x1
+	ldx V68		; object coord x
 	exg d,x
 	lbsr LDCCF
-	std V68
-	ldd 6,u
+	std V68		; object coord x
+	ldd 6,u		; y2 - y1
 	subd 4,u
-	lsra
+	lsra		; divide by 4
 	rorb
 	lsra
 	rorb
-	addd 4,u
-	ldx V8D
+	addd 4,u	; + y1
+	ldx V8D		; object coord y
 	exg d,x
 	lbsr LDCCF
-	std V8D
+	std V8D		; object coord y
+
+	* What's the monster's position in global coordinates?
 LDC28	ldx ,s
-	ldd V68
+	ldd V68		; object coord x
 	std ,x
-	ldd V8D
+	ldd V8D		; object coord y
 	std 2,x
-	ldd V68
+	ldd V68		; object coord x
 	subd mazeoffx
-	std V68
-	ldd V8D
+	std V68		; object coord x
+	ldd V8D		; object coord y
 	subd mazeoffy
-	std V8D
-	ldd V68
+	std V8D		; object coord y
+
+	* Is this monster onscreen?
+	ldd V68		; object coord x
 	cmpd #$fff8
 	lblt LDCCA
 	cmpd #$7f
 	bgt LDCCA
-	ldd V8D
+	ldd V8D		; object coord y
 	cmpd #$fff8
 	blt LDCCA
 	cmpd #$5f
 	bgt LDCCA
+
+	* Draw monster
 	pshs u
 	ldb 8,u
-	leau LDD84,pcr	; spider
-	leau b,u	; or fireball
-	lda V69
-	eora V8E
+	leau LDD84,pcr	; drawing spider sprites
+	leau b,u	; or fireball, ghost or skull sprites
+	lda V68+1	; low order object coord x
+	eora V8D+1	; low order object coord y
 	anda #2
 	beq LDC71
-	leau 16,u
-LDC71	lda V8E
-	ldb V69
-	lbsr drawsprite
+	leau 16,u	; use second frame of sprite animation
+LDC71	lda V8D+1	; low order object coord y
+	ldb V68+1	; low order object coord x
+	lbsr drawsprite ; draw monster sprite
 	puls u
-	ldd V68
+
+	* set up hitbox for collision test
+	ldd V68		; object coord x
 	subd #4
-	stb VDD
+	stb hity1
 	addd #8
-	stb VDE
-	ldd V8D
+	stb hity2
+	ldd V8D		; object coord y
 	subd #4
-	stb VDF
+	stb hitx1
 	addd #8
-	stb VE0
-	lda #8
+	stb hitx2
+	lda #8	; 8 slots in explosion queue
 	pshs u
 	pshs a
-	ldu #$1bfc
-LDC9B	dec ,s
+
+	* Any collision between explosions and this monster?
+	ldu #XQUEUE-4	; explosion queue
+LDC9B	dec ,s		; done with queue?
 	blt LDCC6
-	leau 4,u
+	leau 4,u	; move to next queue slot
 	ldd ,u
-	beq LDC9B
-	ldd 2,u
-	cmpa VDF
-	bcs LDC9B
-	cmpa VE0
-	bhi LDC9B
-	cmpb VDD
-	bcs LDC9B
-	cmpb VDE
-	bhi LDC9B
-	clr VD5
-	clra
+	beq LDC9B	; slot is empty
+	ldd 2,u		; coordinates of this explosion
+	cmpa hitx1	; hitbox min x
+	blo LDC9B	; no hit
+	cmpa hitx2	; hitbox max x
+	bhi LDC9B	; no hit
+	cmpb hity1	; hitbox min y
+	blo LDC9B	; no hit
+	cmpb hity2	; hitbox max y
+	bhi LDC9B	; no hit
+	clr VD5		; player dead flag
+	clra		; kill monster
 	clrb
 	std [3,s]
-	lda #$10
+	lda #$10	; 1000 points for spider or fireball
 	lbsr addscore
 	lbsr showscore
+
 LDCC6	puls a
 	puls u
 LDCCA	lbra LDBAF
-
 LDCCD	puls pc,u
+
+* Monster chase logic
+* X target coord
+* D object coord
 LDCCF	pshs x
 	cmpd ,s
 	bhi LDCDA
-	bcs LDCDF
-	bra LDCE4
-LDCDA	subd #1
+	blo LDCDF
+	bra LDCE4	; no movement
+LDCDA	subd #1		; move left/up
 	bra LDCE2
-LDCDF	addd #1
-LDCE2	clr VD5
+LDCDF	addd #1		; move right/down
+LDCE2	clr VD5		; player not dead
 LDCE4	puls pc,x
 
 * initialize monster home positions
@@ -2249,21 +2354,26 @@ LDCE9	ldd ,x			; get first coordinate base
 	bra LDCE9		; go process another monster
 LDD07	rts
 
+* Chase logic
 LDD08	lda #$ff
-	sta VD5
-	ldd V68
-	ldx V5D
-	leax -3,x
-	lbsr LDCCF
-	std V68
-	ldd V8D
-	ldx V5F
-	leax -3,x
-	lbsr LDCCF
-	std V8D
+	sta VD5			; mark player dead, if movement necessary it'll get cleared
+	ldd V68			; object coord x
+	ldx V5D			; target coord X
+	leax -3,x		; offset target
+	lbsr LDCCF		; chase target coord
+	std V68			; update object coord x
+	ldd V8D			; object coord y
+	ldx V5F			; target coord y
+	leax -3,x		; offset target
+	lbsr LDCCF		; chase target coord
+	std V8D			; update object coord y
 	rts
 
-	include monsters.asm
+ IFDEF MCUSTOM
+ include map/monsters.asm
+ ELSE
+ include monsters.asm
+ ENDC
 
 ; Render an 8x5 bitmap at coordinates (B,A).
 draw8x5	pshs b,a		; save the render coordinates
@@ -2312,7 +2422,7 @@ LDDFB	pshs b			; save X coordinate
 	leay LD4EA,pcr		; point to pixel masks
 	ldb a,y			; get pixel mask for pixel
 	comb			; invert it so we can clear the pixels
-	andb ,x			; read screen data and clear the pixel to colour #0
+	andb ,x			; read screen data and clear the pixel to color #0
 	stb ,x			; set new pixel data on screen
 	rts
 
@@ -2355,21 +2465,24 @@ LDE58	lda curposy		; get current vertical coordinate on screen
 	ldb curposx		; get current horizontal coordinate on screen
 	deca			; calculate one pixel up and left (bottom right of comparison box)
 	decb
-	sta VE0			; save the calculated coordinates
-	stb VDE
+	sta hitx2			; save the calculated coordinates
+	stb hity2
 	suba #2			; calculate two more pixels up and left (top left of comparison box)
 	subb #2
-	sta VDF			; save those calculated coordinates
-	stb VDD
+	sta hitx1			; save those calculated coordinates
+	stb hity1
 	tst portaloff		; are portals active?
 	beq LDE70		; brif so - don't adjust counter
 	inc portaloff		; bump portal disable count (will eventually wrap to 0 and re-enable portals)
-LDE70	leau LDF2A,pcr		; point to portal list
-	leau -12,u		; compensate for leau below (above could use LDF2A-12 instead)
-LDE76	leau 12,u		; move to next item
+
+* CYCLE THROUGH ALL THE PORTALS
+LDE70	leau LDF2A-PTROWLEN,pcr	; point to portal list
+	;leau -12,u		; compensate for leau below (above could use LDF2A-12 instead)
+LDE76	leau PTROWLEN,u		; move to next item
 	ldd ,u			; fetch X coordinate in maze
 	lbeq LDF09		; brif end of table
-	ldd ,u			; fetch X coordinate (redundant)
+* IS IT VISIBLE
+	;ldd ,u			; fetch X coordinate (redundant)
 	subd mazeoffx		; subtract maze display offset
 	cmpd #$fffa		; is it within 6 pixels of left of screen?
 	blt LDE76		; brif not - move to next item
@@ -2382,6 +2495,7 @@ LDE76	leau 12,u		; move to next item
 	blt LDE76		; brif not
 	cmpd #$5f		; is it within the visible area (bottom)?
 	bgt LDE76		; brif not
+* RENDER PORTAL 
 	stb VD8			; save Y coordinate for rendering
 	pshs u			; save portal pointer
 	leau LDF1A,pcr		; point to active portal graphic
@@ -2394,28 +2508,31 @@ LDEB0	lda VD8			; get Y render coordinate
 	puls u			; get back portal pointer
 	tst portaloff		; are portals enabled?
 	bne LDE76		; brif not
+* PORTAL ACTIVATED?
 	lda VD9			; get vertical render location
 	ldb VD8			; get horizontal render location
-	cmpa VDE		; are we below the bottom of the bounding box?
+	cmpa hity2		; are we below the bottom of the bounding box?
 	bgt LDE76		; brif so - not activating portal
-	cmpa VDD		; are we above the top of the bounding box?
+	cmpa hity1		; are we above the top of the bounding box?
 	blt LDE76		; brif so - not activating portal
-	cmpb VE0		; are we to the right of the bounding box?
+	cmpb hitx2		; are we to the right of the bounding box?
 	bgt LDE76		; brif so - not activating portal
-	cmpb VDF		; are we to the left of the bounding box?
+	cmpb hitx1		; are we to the left of the bounding box?
 	blt LDE76		; brif so - not activating portal
+* GO THROUGH PORTAL
 	lbsr dobleep		; make the portal sound
 	lbsr setstartpos	; reset to start coordinates
 	inc curposx		; bump both coordinates two pixels down and right
 	inc curposx
 	inc curposy
 	inc curposy
-	lbsr random		; get a random value
-	lsrb			; keep bits 1,2
-	andb #3
-	lslb			; double it for two bytes per coordinate pair
-	addb #4			; move past portal location
-	ldd b,u			; fetch portal destination ("random" selection from four choices)
+
+	lda #NPORTALS-1		; choose a random portal destination
+	lbsr rand
+	lsla			; double it for two bytes per coordinate pair
+	adda #4			; move past portal location
+	ldd a,u			; fetch random portal destination
+
 	sta VBF			; save X coordinate
 	clra			; zero extend Y coordinate
 	lslb			; multiply by 4
@@ -2435,31 +2552,15 @@ LDEB0	lda VD8			; get Y render coordinate
 	sbca #0			; propagate carry
 	std mazeoffx		; save new maze display offset
 	inc portaloff		; disable portals
-	lbra LDE76		; go render another portal (this feels buggy)
+	;lbra LDE76		; go render another portal (this feels buggy)
 
 LDF09	rts
 
-; Inactive portal graphic
-LDF0A	fdb %0000010101000000
-	fdb %0001000000010000
-	fdb %0100000000000100
-	fdb %0100000000000100
-	fdb %0100000000000100
-	fdb %0001000000010000
-	fdb %0000010101000000
-	fdb %0000000000000000
-
-; Active portal graphic
-LDF1A	fdb %0000010101000000
-	fdb %0001000000010000
-	fdb %0100000000000100
-	fdb %0100001100000100
-	fdb %0100000000000100
-	fdb %0001000000010000
-	fdb %0000010101000000
-	fdb %0000000000000000
-
-	include portals.asm
+ IFDEF MCUSTOM
+ include map/portals.asm
+ ELSE
+ include portals.asm
+ ENDC
 
 drawmazeboth lbsr clearrender	; get a clean render area
 	lbsr drawvert		; draw the vertical lines
@@ -2482,29 +2583,17 @@ LDF8C	cmpa #$15
 	sta V19
 LDF94	puls a,pc
 
-LDF96	tst V18
-	beq LDF9C
-	dec V18
-LDF9C	tst V19
-	beq LDFA2
-	dec V19
+* Make crystal ball and crown time out eventually
+LDF96	tst V18		; crown active?
+	beq LDF9C	; no
+	dec V18		; decrease time remaining on crown
+LDF9C	tst V19		; crystal ball active?
+	beq LDFA2	; no
+	dec V19		; decrease time remaining on crystal ball
 LDFA2	rts
 
 vermess	fcb 13
 	fcc 'VERSION 1.0.2'
-
-;checkcssel	ldd #$c07f		; code for 256 px 2 colour, colour set 0, and scan code for SHIFT
-;	bsr LDFC1			; scan keyboard and set VDG if pressed
-;	ldd #$c8fd			; code for 128 px 4 colour, colour set 1, and scan code for CLEAR
-;	bsr LDFC1			; scan keyboard and set VDG if pressed
-;	ldd #$f8fe			; code for 128 px 4 colour, colour set 1, and scan code for ENTER
-;LDFC1	stb PIA0.DB			; save column strobe
-;	ldb PIA0.DA			; read keyboard data
-;	andb #$7f			; mask off comparator
-;	cmpb #$3f			; do we have a key press in row 6?
-;	bne LDFD0			; brif not
-;	sta PIA1.DB			; program VDG
-;LDFD0	rts
 
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
 checkcssel ldd #$c07f ; SHIFT
@@ -2553,11 +2642,11 @@ LDFD7	pshs u,b,a		; save registers
 	ldu #PIA1.DB		; point to PIA1 Data B
 	lda ,u			; fetch current VDG settings
 	pshs a			; save it
-	lda #$c0		; 256 px, 4 colour, colour set 0
+	lda #$c0		; 256 px, 4 color, color set 0
 	sta ,u			; set VDG
 	lda #10			; iterate 10 times (5 complete cycles)
 LDFE6	ldb ,u			; get current VDG mode
-	eorb #8			; flip colour set
+	eorb #8			; flip color set
 	stb ,u			; set new VDG mode
 	lbsr dobleep
 	deca			; done all iterations
@@ -2566,8 +2655,11 @@ LDFE6	ldb ,u			; get current VDG mode
 	sta ,u			; restore VDG mode
 	puls pc,u,b,a		; restore registers and return
 
- IFDEF MLASER
-	include laser.asm
- ENDC
+IRQ	lda PIA0.DB		; clear interrupt
+	lda tick
+	beq IRQ@
+	dec tick
+IRQ@	inc tock
+	rti
 
 	end START
