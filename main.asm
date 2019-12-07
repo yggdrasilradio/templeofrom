@@ -113,6 +113,7 @@ POTVAL	rmb 4 ; joystick values
 temp	rmb 1
 tick	rmb 1 ; IRQ countdown timer
 tock	rmb 1 ; IRQ countup timer
+aggro	rmb 1 ; aggro flag
 
 
 * SCREEN 1
@@ -2185,6 +2186,7 @@ LDBC2	ldd ,u
 	std V8D		; object coord y
 
 * Is the player inside the monster's aggro area?
+	clr aggro
 	ldd V5D		; target coord x
 	ldx ,u
 	ldy 2,u
@@ -2203,6 +2205,7 @@ LDBC2	ldd ,u
 	bne LDC02	; if so, monster can't see player
 
 * Player is inside aggro area: chase player
+	inc aggro
 	clr V5C		; reset bat creation timer
 	lbsr LDD08	; chase player
 	tst 8,u		; spider vs fireball
@@ -2252,7 +2255,7 @@ LDC28	ldx ,s
 	cmpd #$fff8
 	lblt LDCCA
 	cmpd #$7f
-	bgt LDCCA
+	lbgt LDCCA
 	ldd V8D		; object coord y
 	cmpd #$fff8
 	blt LDCCA
@@ -2261,7 +2264,12 @@ LDC28	ldx ,s
 
 	* Draw monster
 	pshs u
-	ldb 8,u
+	ldb 8,u		; is this a ghost?
+	cmpb #$40
+	bne no@
+	tst aggro	; and aggro?
+	beq nodraw@	; if not, don't draw it
+no@
 	leau LDD84,pcr	; drawing spider sprites
 	leau b,u	; or fireball, ghost or skull sprites
 	lda V68+1	; low order object coord x
@@ -2272,6 +2280,7 @@ LDC28	ldx ,s
 LDC71	lda V8D+1	; low order object coord y
 	ldb V68+1	; low order object coord x
 	lbsr drawsprite ; draw monster sprite
+nodraw@
 	puls u
 
 	* set up hitbox for collision test

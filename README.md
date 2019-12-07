@@ -26,6 +26,10 @@ Added generation of arbitrary number of portals, monsters, treasures, walls.
 
 Added support for GHOST and SKULL monsters
 
+Expanded to add more rooms, monsters, treasures
+
+Ghosts are invisible unless you aggro them
+
 Added utility to generate level data from a gif image:
 
 * Use PSD file to alter/expand walls, add monsters and treasures.
@@ -33,6 +37,7 @@ Added utility to generate level data from a gif image:
 * "Objects" layer shows how to create monsters and treasures.
 * White "hot spot" of each object needs to align on the grid as shown.
 * "Hot spot" of monsters must have a wall to the left, right, above and below.
+* Use optional yellow walls to denote monster aggro area
 * Include all layers
 * Save edited PSD as map.gif, then _make custom_ to build new version
 
