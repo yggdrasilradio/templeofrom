@@ -2207,10 +2207,24 @@ LDBC2	ldd ,u
 * Player is inside aggro area: chase player
 	inc aggro
 	clr V5C		; reset bat creation timer
+
+	* How fast to chase player?
+	* $00 = spider		1x
+	* $20 = fireball	2x
+	* $40 = ghost		1x
+	* $60 = skull		3x
+	lda 8,u
+	beq speed1x@	; spider 1x
+	cmpa #$40
+	beq speed1x@	; ghost 1x
+	cmpa #$20
+	beq speed2x@	; fireball 2x
+speed3x@
 	lbsr LDD08	; chase player
-	tst 8,u		; spider vs fireball
-	beq LDC28
-	lbsr LDD08	; fireball chases 2x faster
+speed2x@
+	lbsr LDD08	; chase player
+speed1x@
+	lbsr LDD08	; chase player
 	bra LDC28
 
 * Player is outside monster aggro area: return to home

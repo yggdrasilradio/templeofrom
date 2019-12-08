@@ -24,11 +24,12 @@ Deciphered maze, monster, portal and treasure data formats.
 
 Added generation of arbitrary number of portals, monsters, treasures, walls.
 
-Added support for GHOST and SKULL monsters
-
 Expanded to add more rooms, monsters, treasures
 
-Ghosts are invisible unless you aggro them
+Added more monster types:
+
+* Ghosts (slow but invisible till you aggro them)
+* Skulls (fast, nasty little buggers)
 
 Added utility to generate level data from a gif image:
 
