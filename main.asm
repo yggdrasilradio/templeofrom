@@ -193,6 +193,10 @@ plr2objlist rmb NTREASURES*4
 
 plr2monsters	 rmb NMONSTERS*4
 
+ IFGT *-$3000
+ ERROR Overlay error
+ ENDC
+
 	org $3000
 
 START	orcc #$50			; make sure interrupts are disabled
