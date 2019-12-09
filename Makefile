@@ -9,7 +9,7 @@ endif
 
 custom:
 	(cd map; ./map.py)
-	lwasm -9 -b -o -DMCUSTOM temple.bin main.asm
+	lwasm -l -9 -b -o -DMCUSTOM temple.bin main.asm > temple.lst
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
 endif
