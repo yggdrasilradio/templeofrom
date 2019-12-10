@@ -2622,7 +2622,7 @@ LDF9C	tst V19		; crystal ball active?
 LDFA2	rts
 
 vermess	fcb 13
-	fcc 'VERSION 1.0.2'
+	fcc 'VERSION 2.0.0'
 
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
 checkcssel ldd #$c07f ; SHIFT
