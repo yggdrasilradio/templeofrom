@@ -197,6 +197,8 @@ plr2monsters	 rmb NMONSTERS*4
  ERROR Overlay error
  ENDC
 
+zdata equ *
+
 	org $3000
 
 START	orcc #$50			; make sure interrupts are disabled
