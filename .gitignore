@@ -3,6 +3,8 @@
 *.bin
 *.lst
 *.swp
+*.dsk
+*.DSK
 map/*.asm
 cfg
 backups
