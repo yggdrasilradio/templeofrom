@@ -273,7 +273,7 @@ LC070	pshs a			; save top coordinate
 	pshs b			; save bottom coordinate
 	tfr x,d			; stuff the horizontal coordinate into an accumulator
 	andb #3			; figure out which pixel in the byte we're at
-	leay LC09A,pcr			; point to pixel bit masks
+	leay LC09A,pcr		; point to pixel bit masks
 	lda b,y			; get the proper pixel bit mask
 	ldb ,s+			; get bottom coordinate
 	subb ,s			; subtract out top coordinate (number of pixels to do)
@@ -487,8 +487,8 @@ plr1mess fcb 10
 plr2mess fcb 10
 	fcc 'PLAYER TWO'
 
-ToRmess	fcb 13
-	fcc 'TEMPLE OF ROM'
+ToRmess	fcb 16
+	fcc 'TEMPLE OF ROM !!'
 
 gameovermess fcb 9
 	fcc 'GAME OVER'
@@ -520,9 +520,11 @@ authmess fcb 13
 ;rightsmess fcb 19
 ;	fcc 'ALL RIGHTS RESERVED'
 
-fontidx	fcc 'ABCDEFGHI1KLMNOP9RST8VW4Y235JQXZU6790 '	; font index character list
+fontidx	fcc 'ABCDEFGHI1KLMNOP9RST8VW4Y235JQXZU6790 !'	; font index character list
+
 ; Font data. Each character is encoded as 32 bits. The character matrix is 5x6 with
 ; the bits packed left to right and top down starting at the msb of each byte.
+
 fontdata fcb $f0,$5f,$17,$80		; A
 	fcb $f4,$7d,$1f,$00		; B
 	fcb $74,$61,$17,$00		; C
@@ -564,6 +566,7 @@ fontdata fcb $f0,$5f,$17,$80		; A
 	fcb $74,$63,$17,$00		; O (also used for 0)
 
 	fcb $00,$00,$00,$00		; space
+ fcb $71,$08,$47,$00 ; I
 
  IFDEF MCUSTOM
  include map/lines.asm
