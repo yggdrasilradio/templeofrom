@@ -15,54 +15,28 @@ def objectid(x, y):
 				sum += 1
 	return sum
 
-def hout(x1, y, x2):
+def lineout(v1, c, v2):
 	global r
-	x1 = x1 / 4
-	y = y / 4
-	x2 = x2 / 4
-	if x1 <> x2:
-		nsegments = int((x2 - x1) / int(127 / 4)) + 1
+	v1 = v1 / 4
+	c = c / 4
+	v2 = v2 / 4
+	if v1 <> v2:
+		nsegments = int((v2 - v1) / int(127 / 4)) + 1
 		if nsegments > 1:
-			r = r + '* fcb ' + str(y) + ',' + str(x1) + ',' + str(x2) + ' in ' + str(nsegments) + ' segments:\n'
-			delta = int((x2 - x1) / nsegments)
+			r = r + '* fcb ' + str(c) + ',' + str(v1) + ',' + str(v2) + ' in ' + str(nsegments) + ' segments:\n'
+			delta = int((v2 - v1) / nsegments)
 		if nsegments == 1:
-			r = r + ' fcb ' + str(y) + ',' + str(x1) + ',' + str(x2) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1) + ',' + str(v2) + '\n'
 		elif nsegments == 2:
-			r = r + ' fcb ' + str(y) + ',' + str(x1) + ',' + str(x1 + delta ) + '\n'
-			r = r + ' fcb ' + str(y) + ',' + str(x1 + delta) + ',' + str(x2) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1) + ',' + str(v1 + delta ) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1 + delta) + ',' + str(v2) + '\n'
 		elif nsegments == 3:
-			r = r + ' fcb ' + str(y) + ',' + str(x1) + ',' + str(x1 + delta) + '\n'
-			r = r + ' fcb ' + str(y) + ',' + str(x1 + delta) + ',' + str(x1 + 2 * delta) + '\n'
-			r = r + ' fcb ' + str(y) + ',' + str(x1 + 2 * delta) + ',' + str(x2) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1) + ',' + str(v1 + delta) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1 + delta) + ',' + str(v1 + 2 * delta) + '\n'
+			r = r + ' fcb ' + str(c) + ',' + str(v1 + 2 * delta) + ',' + str(v2) + '\n'
 		else:
 			r = r + '*ERROR\n'
-			print "HORIZ SEGMENTING ERROR"
-
-def vout(y1, x, y2):
-	global r
-	y1 = y1 / 4
-	x = x / 4
-	y2 = x2 / 4
-	if y1 <> y2:
-		nsegments = int((y2 - y1) / int(95 / 4)) + 1
-		if nsegments > 1:
-			r = r + '* fcb ' + str(y1) + ',' + str(x) + ',' + str(y2) + ' in ' + str(nsegments) + ' segments:\n'
-			delta = int((y2 - y1) / nsegments)
-		if nsegments == 1:
-			r = r + ' fcb ' + str(y1) + ',' + str(x) + ',' + str(y2) + '\n'
-		elif nsegments == 2:
-			r = r + '* 2 SEGMENTS\n'
-			r = r + ' fcb ' + str(y1) + ',' + str(x) + ',' + str(y1 + delta) + '\n'
-			r = r + ' fcb ' + str(y1 + delta) + ',' + str(x) + ',' + str(y2) + '\n'
-		elif nsegments == 3:
-			r = r + '* 3 SEGMENTS\n'
-			r = r + ' fcb ' + str(y1) + ',' + str(x) + ',' + str(y1 + delta) + '\n'
-			r = r + ' fcb ' + str(y1 + delta) + ',' + str(x) + ',' + str(y1 + 2 * delta) + '\n'
-			r = r + ' fcb ' + str(y1 + 2 * delta) + ',' + str(x) + ',' + str(y2) + '\n'
-		else:
-			r = r + '*ERROR\n'
-			print "VERT SEGMENTING ERROR"
-
+			print "SEGMENTING ERROR"
 
 img = Image.open('map.gif')
 pix = img.load()
@@ -129,7 +103,7 @@ for x in range(4, width - 1, 4):
 			y1 = y
 		elif color <> BLUE and flag == 1:
 			# end of line
-			hout(y1, x1, y)
+			lineout(y1, x1, y)
 			flag = 0;
 r = r + ' fcb 0\n\n'
 
@@ -153,7 +127,7 @@ for y in range(4, height - 1, 4):
 			y1 = y
 		elif color <> BLUE and flag == 1:
 			# end of line
-			hout(x1, y1, x)
+			lineout(x1, y1, x)
 			flag = 0;
 			delta = x - x1
 
