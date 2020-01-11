@@ -8,7 +8,7 @@
 ; 0400-0FFF	graphics screen #1
 ; 1000-1BFF	graphics screen #2
 ; 1C00		explosion sprite queue
-; 2000		code
+; 3000		code
 
  IFDEF MCUSTOM
  include map/constants.asm
@@ -500,7 +500,7 @@ twoplrmess fcb 11
 	fcc 'TWO PLAYERS'
 
 copyrmess fcb 14
-	fcc 'COPYRIGHT 2019 '
+	fcc 'COPYRIGHT 2020 '
 
 authmess fcb 13
 	fcc 'BY RICK ADAMS '
