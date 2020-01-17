@@ -5,7 +5,7 @@ main: main.asm
 	lwasm -l -9 -b -o temple.bin main.asm > temple.lst
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
-	decb copy -r -2 -b temple.bin TEMPLE.DSK,TEMPLE.BIN
+	decb copy -r -2 -b temple.bin temple.dsk,TEMPLE.BIN
 endif
 
 custom:
@@ -13,7 +13,7 @@ custom:
 	lwasm -l -9 -b -o -DMCUSTOM temple.bin main.asm > temple.lst
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
-	decb copy -r -2 -b temple.bin TEMPLE.DSK,TEMPLE.BIN
+	decb copy -r -2 -b temple.bin temple.dsk,TEMPLE.BIN
 endif
 
 run:
@@ -26,4 +26,4 @@ backup:
 	tar -cvf backups/`date +%Y-%m-%d_%H-%M-%S`.tar Makefile *.asm
 
 install:
-	rcp TEMPLE.DSK ricka@rickadams.org:/home/ricka/rickadams.org/downloads/TEMPLE.DSK
+	rcp temple.dsk ricka@rickadams.org:/home/ricka/rickadams.org/downloads/TEMPLE.DSK
