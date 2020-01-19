@@ -1,6 +1,8 @@
 Temple of ROM
 ==========
 
+![](images/newmap.jpg)
+
 Starting from a disassembly of a Temple of ROM cart by William Astle, I've managed to build the game successfully.
 I'm hoping to expand the game by adding new features:
 
