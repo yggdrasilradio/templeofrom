@@ -13,7 +13,7 @@ I'm hoping to expand the game by adding new features:
 
 I'm hoping to have something available for sale eventually, but the primary goal of this project is to have *fun*!
 Please do look over my shoulder as I work on this and feel free to contact me
-via the #templeofrom channel on [Discord](https://discord.gg/4J5nHXm) .
+via the #temple-of-rom-ii channel on [Discord](https://discord.gg/4J5nHXm) .
 
 ### Changes
 
