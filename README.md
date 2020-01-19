@@ -7,12 +7,13 @@ Starting from a disassembly of a Temple of ROM cart by William Astle, I've manag
 I'm hoping to expand the game by adding new features:
 
 * Expand level -- DONE
-* More monsters -- DONE
+* More rooms, monsters and treasures -- DONE
 * Different monsters -- DONE
 * What else?  Dunno!
 
 I'm hoping to have something available for sale eventually, but the primary goal of this project is to have *fun*!
-Please do look over my shoulder as I work on this and feel free to contact me on Discord.
+Please do look over my shoulder as I work on this and feel free to contact me
+via the #templeofrom channel on [Discord](https://discord.gg/4J5nHXm) .
 
 ### Changes
 
