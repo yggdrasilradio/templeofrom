@@ -34,7 +34,7 @@ Added more monster types:
 * Ghosts (slow but invisible till you aggro them)
 * Skulls (fast, nasty little buggers)
 
-Added utility to generate level data from a gif image:
+Added ability to generate level data from a gif image:
 
 * Use PSD file to alter/expand walls, add monsters and treasures.
 * Walls have to be vertical/horizontal, on grid lines.
