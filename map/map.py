@@ -60,9 +60,9 @@ FIREBALL = 23
 SPIDER = 24
 GOBLET = 25
 PITCHER = 26
-SKULL = 34
+SKULL = 28
 BALL = 37
-GHOST = 35
+GHOST = 30
 
 width = img.size[0]
 height = img.size[1]
