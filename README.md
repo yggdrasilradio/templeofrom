@@ -7,10 +7,10 @@ I'm hoping to expand the game by adding new features:
 * Expand level -- DONE
 * More monsters -- DONE
 * Different monsters -- DONE
-* Doors and keys?
-* Level editor?
+* What else?  Dunno!
 
-I'm hoping to maybe have something available for sale eventually.
+I'm hoping to have something available for sale eventually, but the primary goal of this project is to have *fun*!
+Please do look over my shoulder as I work on this and feel free to contact me on Discord.
 
 ### Changes
 
@@ -40,6 +40,6 @@ Added utility to generate level data from a gif image:
 * "Hot spot" of monsters must have a wall to the left, right, above and below.
 * Use optional yellow walls to denote monster aggro area
 * Include all layers
-* Save edited PSD as map.gif, then _make custom_ to build new version
+* Save edited PSD as /map/map.gif, then _make custom_ to build new version
 
 Generated levels now will build memory tables sized to the number of monsters/treasures specified.
