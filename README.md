@@ -1,4 +1,4 @@
-Temple of ROM
+Temple of ROM II
 ==========
 
 ![](images/newmap.jpg)
