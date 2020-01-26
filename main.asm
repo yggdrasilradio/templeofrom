@@ -508,6 +508,9 @@ authmess fcb 13
 ;fest1 fcb 10
 	;fcc "WELCOME TO"
 
+cocot  fcb 16
+	fcc "COCOTALK EDITION"
+
 ;fest2 fcb 13
 	;fcc "COCOFEST 2019"
 
@@ -764,33 +767,44 @@ LCFDF	leau ToRmess+1,pcr	; point to "TEMPLE OF ROM" message
 	ldb V5C			; fetch counter
 	andb #3			; wrap at 3
 	stb texttty		; save result as "tty" state (will do the "tty" thing every fourth time)
+
 LCFF1	lbsr showmess		; show the "TEMPLE OF ROM" message
 	beq LD05E		; brif button pressed
 	lda VBF			; get saved "tty" state
 	sta texttty		; restore "tty" state
 	lbsr scrolllong		; go scroll for a while
 	bne LD05E		; brif button pressed
+
 	leau vermess+1,pcr	; point to version string
 	lbsr showmess		; show it
 	beq LD05E		; brif button pressed
 	lda #20			; scroll for 20 steps
 	lbsr scrollmaze		; do the scrolling
+
 	leau copyrmess+1,pcr	; point to copyright message
 	lbsr showmess		; show it
 	beq LD05E		; brif button pressed
 	lda #20			; scroll for 20 steps
 	lbsr scrollmaze		; do the scrolling
+
 	leau authmess+1,pcr	; point to author message
 	lbsr showmess		; show it
 	beq LD05E		; brif button pressed
 	lbsr scrolllong		; do a long scroll
 	bne LD05E		; brif button pressed
 
+	;leau cocot+1,pcr
+	;lbsr showmess
+	;beq LD05E		; brif button pressed
+	;lda #20			; scroll for 20 steps
+	;lbsr scrollmaze		; do the scrolling
+
 	;leau fest1+1,pcr	; "Welcome to"
 	;lbsr showmess		; show it
 	;beq LD05E		; brif button pressed
 	;lda #20		; scroll for 20 steps
 	;lbsr scrollmaze	; do the scrolling
+
 	;leau fest2+1,pcr	; "CocoFEST 2019"
 	;lbsr showmess		; show it
 	;beq LD05E		; brif button pressed
@@ -803,12 +817,14 @@ LCFF1	lbsr showmess		; show the "TEMPLE OF ROM" message
 	;lda #20		; scroll for 20 steps
 	;lbsr scrollmaze	; do the scrolling
 	;bne LD05E		; brif button pressed
+
 	;leau tandymess+1,pcr	; point to tandy message
 	;lbsr showmess		; show message
 	;beq LD05E		; brif button pressed
 	;lda #20		; scroll for 20 steps
 	;lbsr scrollmaze	; do the scrolling
 	;bne LD05E		; brif button pressed
+
 	;leau rightsmess+1,pcr	; point to rights message
 	;lbsr showmess		; show messages
 	;beq LD05E		; brif button pressed
