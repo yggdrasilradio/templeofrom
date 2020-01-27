@@ -1,16 +1,16 @@
 
-all:	main
+all:	custom
 
-main: main.asm
-	lwasm -l -9 -b -o temple.bin main.asm > temple.lst
+custom:
+	(cd map; ./map.py)
+	lwasm -l -9 -b -o -DMCUSTOM temple.bin main.asm > temple.lst
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
 	decb copy -r -2 -b temple.bin temple.dsk,TEMPLE.BIN
 endif
 
-custom:
-	(cd map; ./map.py)
-	lwasm -l -9 -b -o -DMCUSTOM temple.bin main.asm > temple.lst
+original: main.asm
+	lwasm -l -9 -b -o temple.bin main.asm > temple.lst
 ifneq ("$(wildcard /media/share1/COCO/drive0.dsk)","")
 	decb copy -r -2 -b temple.bin /media/share1/COCO/drive0.dsk,TEMPLE.BIN
 	decb copy -r -2 -b temple.bin temple.dsk,TEMPLE.BIN
