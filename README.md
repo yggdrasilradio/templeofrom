@@ -27,11 +27,9 @@ Deciphered maze, monster, portal and treasure data formats.
 
 Added generation of arbitrary number of portals, monsters, treasures, walls.
 
-Expanded to add more rooms, monsters, treasures.
+Expanded to add more rooms (the maze is 45% larger!), monsters, treasures.
 
-The game is now 45% bigger!
-
-Added two more monsters:
+Added two more types of monsters:
 
 * Ghosts (slow but invisible till you aggro them)
 * Skulls (fast, nasty little buggers)
