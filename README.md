@@ -31,7 +31,7 @@ Expanded to add more rooms, monsters, treasures.
 
 The game is now 45% bigger!
 
-Added more monster types:
+Added two more monsters:
 
 * Ghosts (slow but invisible till you aggro them)
 * Skulls (fast, nasty little buggers)
