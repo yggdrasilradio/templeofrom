@@ -706,7 +706,7 @@ no@	std randseed
 
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
-	lbsr Coco3RGB 		; default to RGB no artifacting
+	lbsr vdefault 		; default video mode
 	ldd #SCREEN1		; set bottom of screen to clear to start of screen #1
 	std endclear
 	lbsr LD3B9		; clear both screens
@@ -2644,22 +2644,95 @@ vermess	fcb 13
 	fcc 'VERSION 2.0.0'
 
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
-checkcssel ldd #$c07f ; SHIFT
-	bsr LDFC1
-	ldd #$c8fd ; CLEAR
-	bsr LDFC1
-	ldd #$f8fe ; ENTER
-	bsr LDFC1
-	ldd #$00fb ; BREAK
-LDFC1	stb PIA0.DB
-	ldb PIA0.DA
-	andb #$7f
-	cmpb #$3f
-	bne LDFD0
-	sta PIA1.DB
-	tsta		; hard reset to RSDOS on BREAK
-	bne notbreak@
-	clra		; hard reset to RSDOS
+checkcssel
+	ldb #$7f	; SHIFT
+	lbsr keyin
+	lbcs shift@
+	ldb #$fd	; CLEAR
+	lbsr keyin
+	lbcs clear@
+	ldb #$fe	; ENTER
+	lbsr keyin
+	lbcs enter@
+	ldb #$fb	; BREAK
+	lbsr keyin
+	lbcs break@
+	rts
+shift@			; SHIFT: PAL colorset
+	lda #$c0
+	sta PIA1.DB	; set video mode
+	clra		; black
+	sta $FFB0
+	sta $FFB4
+	sta $FFB8
+	sta $FFBC
+	lda #12		; blue
+	sta $FFB1
+	sta $FFB5
+	sta $FFB9
+	sta $FFBD
+	lda #7		; red
+	sta $FFB2
+	sta $FFB6
+	sta $FFBA
+	sta $FFBE
+	lda #63		; white
+	sta $FFB3
+	sta $FFB7
+	sta $FFBB
+	sta $FFBF
+	rts
+clear@			; CLEAR: RGB colorset
+vdefault		; default mode
+	lda #$c8
+	sta PIA1.DB	; set video mode
+	clra		; black
+	sta $FFB0
+	sta $FFB4
+	sta $FFB8
+	sta $FFBC
+	lda #9		; blue
+	sta $FFB1
+	sta $FFB5
+	sta $FFB9
+	sta $FFBD
+	lda #36		; red
+	sta $FFB2
+	sta $FFB6
+	sta $FFBA
+	sta $FFBE
+	lda #63		; white
+	sta $FFB3
+	sta $FFB7
+	sta $FFBB
+	sta $FFBF
+	rts
+enter@			; ENTER: Composite colorset
+	lda #$f8
+	sta PIA1.DB	; set video mode
+	clra		; black
+	sta $FFB0
+	sta $FFB4
+	sta $FFB8
+	sta $FFBC
+	lda #12		; blue
+	sta $FFB1
+	sta $FFB5
+	sta $FFB9
+	sta $FFBD
+	lda #7		; red
+	sta $FFB2
+	sta $FFB6
+	sta $FFBA
+	sta $FFBE
+	lda #63		; white
+	sta $FFB3
+	sta $FFB7
+	sta $FFBB
+	sta $FFBF
+	rts
+break@			; BREAK: hard reset to RSDOS
+	clra
 	tfr a,dp
 	lda #$88
 	sta $ff90	; turn off MMU
@@ -2667,20 +2740,17 @@ LDFC1	stb PIA0.DB
 	sta $ffde	; turn on ROMs
 	clr $0071
 	jmp [$fffe]
-notbreak@
-	clra		; set palette registers for coco3 RGB
-	sta $FFB4
-	lda #63
-	sta $FFB7
-	lda #9
-	sta $FFB5
-	lda #36
-	sta $FFB6
-LDFD0	rts
-Coco3RGB
-	lda #$c8
-	sta PIA1.DB
-	bra notbreak@
+
+keyin
+	stb PIA0.DB
+	ldb PIA0.DA
+	andb #$7f
+	cmpb #$3f
+	bne no@
+	coma		; key is pressed
+	rts
+no@	clra		; key is not pressed
+	rts
 
 LDFD1	jsr SETMUX		; program analog MUX for source in B
 	jmp SNDON		; enable analog MUX (enable sound output)
