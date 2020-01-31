@@ -26,9 +26,16 @@ PIA1.DB	equ $ff22
 PIA1.CB	equ $ff23
 SAM	equ $ffc0
 
+; References to Color Basic ROM APIs
+RSTFLG	equ $71
+RSTVEC	equ $72
+
 *** SEGMENT 1 ***
 
 	setdp 0
+
+	; start right after RSTFLG and RSTVEC so we don't overlay them
+	org $74
 
 monsterptr rmb 2 ; pointer to current player's monster locations
 portaloff rmb 1	; nonzero means portals are currently disabled
@@ -93,16 +100,6 @@ hity1	rmb 1 ; miny
 hity2	rmb 1 ; maxy
 hitx1	rmb 1 ; minx
 hitx2	rmb 1 ; maxx
-
-; getting close to reserved area
-
-	org $71
-
-; References to Color Basic ROM APIs
-RSTFLG	rmb 1
-RSTVEC	rmb 2
-;RSTFLG	equ $71
-;RSTVEC	equ $72
 
 numplayers	rmb 1 ; number of players in the game
 scrollstep	rmb 2 ; step/direction for maze scrolling
