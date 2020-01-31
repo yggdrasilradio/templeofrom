@@ -26,10 +26,6 @@ PIA1.DB	equ $ff22
 PIA1.CB	equ $ff23
 SAM	equ $ffc0
 
-; References to Color Basic ROM APIs
-RSTFLG	equ $71
-RSTVEC	equ $72
-
 *** SEGMENT 1 ***
 
 	setdp 0
@@ -98,6 +94,16 @@ hity2	rmb 1 ; maxy
 hitx1	rmb 1 ; minx
 hitx2	rmb 1 ; maxx
 
+; getting close to reserved area
+
+	org $71
+
+; References to Color Basic ROM APIs
+RSTFLG	rmb 1
+RSTVEC	rmb 2
+;RSTFLG	equ $71
+;RSTVEC	equ $72
+
 numplayers	rmb 1 ; number of players in the game
 scrollstep	rmb 2 ; step/direction for maze scrolling
 plr1state	rmb 6 ; player two game state (6 bytes)
@@ -115,6 +121,7 @@ tick	rmb 1 ; IRQ countdown timer
 tock	rmb 1 ; IRQ countup timer
 aggro	rmb 1 ; aggro flag
 
+STACK	equ $3ff
 
 * SCREEN 1
 *
@@ -679,7 +686,8 @@ LCF50	nop			; flag for valid warm start routine
 	leau LCF50,pcr		; install reset handler
 	stu RSTVEC
 	lda #$55		; flag for reset vector as valid
-	lds #$3ff		; put stack somewhere safe
+;	lds #$3ff		; put stack somewhere safe
+	lds #STACK		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
 	lda #$f8		; code for 2 color 256px graphics, color set 1
 	sta PIA1.DB		; set VDG graphics mode
@@ -2644,95 +2652,22 @@ vermess	fcb 13
 	fcc 'VERSION 2.0.0'
 
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
-checkcssel
-	ldb #$7f	; SHIFT
-	lbsr keyin
-	lbcs shift@
-	ldb #$fd	; CLEAR
-	lbsr keyin
-	lbcs clear@
-	ldb #$fe	; ENTER
-	lbsr keyin
-	lbcs enter@
-	ldb #$fb	; BREAK
-	lbsr keyin
-	lbcs break@
-	rts
-shift@			; SHIFT: PAL colorset
-	lda #$c0
-	sta PIA1.DB	; set video mode
-	clra		; black
-	sta $FFB0
-	sta $FFB4
-	sta $FFB8
-	sta $FFBC
-	lda #12		; blue
-	sta $FFB1
-	sta $FFB5
-	sta $FFB9
-	sta $FFBD
-	lda #7		; red
-	sta $FFB2
-	sta $FFB6
-	sta $FFBA
-	sta $FFBE
-	lda #63		; white
-	sta $FFB3
-	sta $FFB7
-	sta $FFBB
-	sta $FFBF
-	rts
-clear@			; CLEAR: RGB colorset
-vdefault		; default mode
-	lda #$c8
-	sta PIA1.DB	; set video mode
-	clra		; black
-	sta $FFB0
-	sta $FFB4
-	sta $FFB8
-	sta $FFBC
-	lda #9		; blue
-	sta $FFB1
-	sta $FFB5
-	sta $FFB9
-	sta $FFBD
-	lda #36		; red
-	sta $FFB2
-	sta $FFB6
-	sta $FFBA
-	sta $FFBE
-	lda #63		; white
-	sta $FFB3
-	sta $FFB7
-	sta $FFBB
-	sta $FFBF
-	rts
-enter@			; ENTER: Composite colorset
-	lda #$f8
-	sta PIA1.DB	; set video mode
-	clra		; black
-	sta $FFB0
-	sta $FFB4
-	sta $FFB8
-	sta $FFBC
-	lda #12		; blue
-	sta $FFB1
-	sta $FFB5
-	sta $FFB9
-	sta $FFBD
-	lda #7		; red
-	sta $FFB2
-	sta $FFB6
-	sta $FFBA
-	sta $FFBE
-	lda #63		; white
-	sta $FFB3
-	sta $FFB7
-	sta $FFBB
-	sta $FFBF
-	rts
-break@			; BREAK: hard reset to RSDOS
-	clra
+checkcssel ldd #$c07f ; SHIFT
+	bsr LDFC1
+	ldd #$c8fd ; CLEAR
+	bsr LDFC1
+	ldd #$f8fe ; ENTER
+	bsr LDFC1
+	ldd #$00fb ; BREAK
+LDFC1	stb PIA0.DB
+	ldb PIA0.DA
+	andb #$7f
+	cmpb #$3f
+	bne LDFD0
+	sta PIA1.DB
+	tsta		; hard reset to RSDOS on BREAK
+	bne notbreak@
+	clra		; hard reset to RSDOS
 	tfr a,dp
 	lda #$88
 	sta $ff90	; turn off MMU
@@ -2740,17 +2675,21 @@ break@			; BREAK: hard reset to RSDOS
 	sta $ffde	; turn on ROMs
 	clr $0071
 	jmp [$fffe]
-
-keyin
-	stb PIA0.DB
-	ldb PIA0.DA
-	andb #$7f
-	cmpb #$3f
-	bne no@
-	coma		; key is pressed
-	rts
-no@	clra		; key is not pressed
-	rts
+vdefault
+	lda #$c8
+	sta PIA1.DB
+notbreak@
+	lda #$20	; HOLD MY BEER while I flip the phase bit
+	sta $ff98
+	clra		; set palette registers for coco3 RGB
+	sta $FFB4
+	lda #63
+	sta $FFB7
+	lda #9
+	sta $FFB5
+	lda #36
+	sta $FFB6
+LDFD0	rts
 
 LDFD1	jsr SETMUX		; program analog MUX for source in B
 	jmp SNDON		; enable analog MUX (enable sound output)
