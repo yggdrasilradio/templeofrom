@@ -683,11 +683,22 @@ LCF50	nop			; flag for valid warm start routine
 	leau LCF50,pcr		; install reset handler
 	stu RSTVEC
 	lda #$55		; flag for reset vector as valid
-;	lds #$3ff		; put stack somewhere safe
 	lds #STACK		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
-	lda #$f8		; code for 2 color 256px graphics, color set 1
-	sta PIA1.DB		; set VDG graphics mode
+	lda #$20		; flip the phase bit for Coco3
+	sta $ff98
+	clra			; set palette registers for coco3 RGB
+	sta $FFB4
+	lda #63
+	sta $FFB7
+	lda #9
+	sta $FFB5
+	lda #36
+	sta $FFB6
+
+	* Set default video mode (RGB)
+	lda #$c8
+	sta PIA1.DB
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
 
 	* init VSYNC interrupt
@@ -702,7 +713,6 @@ LCF50	nop			; flag for valid warm start routine
 	sta PIA0.CB
 	andcc #%11101111	; start VSYNC interrupt on IRQ
 
-
 	* Seed random number routine
 	addd $112		; throw in the BASIC timer
 	bne no@			; can't be zero
@@ -711,7 +721,6 @@ no@	std randseed
 
 	ldd #SCREEN2		; set render screen to screen #2
 	std renderscr
-	lbsr vdefault 		; default video mode
 	ldd #SCREEN1		; set bottom of screen to clear to start of screen #1
 	std endclear
 	lbsr LD3B9		; clear both screens
@@ -2649,21 +2658,21 @@ vermess	fcb 13
 	fcc 'VERSION 2.0.0'
 
 * CHANGE VIDEO MODES ON SHIFT, ENTER, CLEAR
-checkcssel ldd #$c07f ; SHIFT
+checkcssel ldd #$c07f	; SHIFT: PAL colorset
 	bsr LDFC1
-	ldd #$c8fd ; CLEAR
+	ldd #$c8fd	; CLEAR: RGB colorset
 	bsr LDFC1
-	ldd #$f8fe ; ENTER
+	ldd #$f8fe	; ENTER: composite colorset
 	bsr LDFC1
-	ldd #$00fb ; BREAK
+	ldd #$00fb	; BREAK: hard reset to RSDOS
 LDFC1	stb PIA0.DB
 	ldb PIA0.DA
 	andb #$7f
 	cmpb #$3f
-	bne LDFD0
-	sta PIA1.DB
+	bne LDFD0	; no key pressed
+	sta PIA1.DB	; change video mode
 	tsta		; hard reset to RSDOS on BREAK
-	bne notbreak@
+	bne LDFD0	; not BREAK
 	clra		; hard reset to RSDOS
 	tfr a,dp
 	lda #$88
@@ -2672,20 +2681,6 @@ LDFC1	stb PIA0.DB
 	sta $ffde	; turn on ROMs
 	clr $0071
 	jmp [$fffe]
-vdefault
-	lda #$c8
-	sta PIA1.DB
-notbreak@
-	lda #$20	; HOLD MY BEER while I flip the phase bit
-	sta $ff98
-	clra		; set palette registers for coco3 RGB
-	sta $FFB4
-	lda #63
-	sta $FFB7
-	lda #9
-	sta $FFB5
-	lda #36
-	sta $FFB6
 LDFD0	rts
 
 LDFD1	jsr SETMUX		; program analog MUX for source in B
