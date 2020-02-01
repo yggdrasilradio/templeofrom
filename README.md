@@ -29,6 +29,10 @@ Added generation of arbitrary number of portals, monsters, treasures, walls.
 
 Expanded to add more rooms (the maze is 45% larger!), monsters, treasures.
 
+CLEAR, ENTER and SHIFT change video modes.
+
+BREAK quits the game and exits to RSDOS.
+
 Added two more types of monsters:
 
 * Ghosts (slow but invisible till you aggro them)
