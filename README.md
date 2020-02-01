@@ -33,7 +33,9 @@ CLEAR, ENTER and SHIFT change video modes.
 
 BREAK quits the game and exits to RSDOS.
 
-Artifacting color comes up correctly on a Coco3 all time now.
+Artifacting color comes up correctly on a Coco3 without need of a reset.
+
+RGB on a Coco3 is now supported.
 
 Added two more types of monsters:
 
