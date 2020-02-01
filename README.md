@@ -33,6 +33,8 @@ CLEAR, ENTER and SHIFT change video modes.
 
 BREAK quits the game and exits to RSDOS.
 
+Artifacting color comes up correctly on a Coco3 all time now.
+
 Added two more types of monsters:
 
 * Ghosts (slow but invisible till you aggro them)
