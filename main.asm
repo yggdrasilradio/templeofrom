@@ -1888,8 +1888,12 @@ LD92C	dec ,s			; are we done yet?
 	beq LD98A		; brif so - bail on rendering
 LD93D	lda texttty		; do we want a delay between rendering characters?
 	bne LD944		; brif not
-LD941	inca			; count up the timer
-	bne LD941		; brif 256 counts done
+
+	ldy #25			; delay loop
+loop@	lbsr checkcssel		; check color set selection keys
+	leay -1,y
+	bne loop@
+
 LD944	ldb [1,s]		; get character to render
 	leay fontidx,pcr	; point to font character index
 	leau fontdata,pcr	; point to font data
