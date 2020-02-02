@@ -685,23 +685,34 @@ LCF50	nop			; flag for valid warm start routine
 	lda #$55		; flag for reset vector as valid
 	lds #STACK		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
-	lda #$20		; flip the phase bit for Coco3
-	sta $ff98
-	clra			; set palette registers for coco3 RGB
-	sta $FFB4
-	lda #63
-	sta $FFB7
-	lda #9
-	sta $FFB5
-	lda #36
-	sta $FFB6
 
-	* Set default video mode (RGB)
-	lda #$c8
+	* Default to composite unless it's a Coco3
+	lda #$f8
+
+	* "You got your Coco3 yet?"
+	ldx $FFFE
+	cmpx #$8C1B
+	bne notcoco3
+
+	* Special Coco 3 palette setup
+	clrb			; black
+	stb $FFB4
+	ldb #9			; blue
+	stb $FFB5
+	ldb #36			; red
+	stb $FFB6
+	ldb #63			; white
+	stb $FFB7
+	ldb #$20		; flip the phase bit
+	stb $ff98
+	lda #$c8		; default to RGB rather than composite
+
+notcoco3
 	sta PIA1.DB
 	sta SAM+5		; set SAM V2 (32 bytes per row, 96 rows)
 
 	* init VSYNC interrupt
+initvsync
 	clr tick
 	leau IRQ,pcr		; IRQ interrupt vector
 	stu $10d
