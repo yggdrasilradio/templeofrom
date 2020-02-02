@@ -29,7 +29,7 @@ Added generation of arbitrary number of portals, monsters, treasures, walls.
 
 Expanded to add more rooms (the maze is 45% larger!), monsters, treasures.
 
-CLEAR, ENTER and SHIFT change video modes.
+CLEAR, ENTER and SHIFT change video modes.  Coco 1/2 defaults to CMP, Coco 3 to RGB.
 
 BREAK quits the game and exits to RSDOS.
 
