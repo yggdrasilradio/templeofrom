@@ -1399,6 +1399,7 @@ LD44F	std VCD
 	stb VCA
 	lda #$f0	; tikkatikkatikka sound
 	sta VD7
+
 LD474	lda VC9
 	ldb VC7
 	cmpd VCF
@@ -1406,7 +1407,8 @@ LD474	lda VC9
 
 	std VCF
 	cmpa #8
-	bls LD498
+;	bls LD498	; don't shoot laser into status area FIXED BUG!
+	blo LD498
 	bsr pset	; draw pixel in laser shot
 	bne LD498
 
@@ -1417,6 +1419,7 @@ LD487	ldd VCB
 	addd VC9
 	std VC9
 	bra LD474
+
 LD495	clr VD1		; reset "walk through walls" timer
 LD497	rts
 
