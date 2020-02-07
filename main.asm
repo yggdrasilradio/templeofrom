@@ -4,7 +4,7 @@
 
 ; General memory map:
 ; 0000-00FF	direct page variables
-; 0100-03FF	other variables, stack
+; 0100-03FF	stack
 ; 0400-0FFF	graphics screen #1
 ; 1000-1BFF	graphics screen #2
 ; 1C00		explosion sprite queue
@@ -39,7 +39,9 @@ RSTVEC	equ $72
 
 monsterptr rmb 2 ; pointer to current player's monster locations
 portaloff rmb 1	; nonzero means portals are currently disabled
-V03	rmb 2
+V03	rmb 1 ; attract mode flag
+
+* Used by music routine
 V05	rmb 2
 V07	rmb 2
 V09	rmb 2
@@ -49,10 +51,11 @@ V0F	rmb 2
 V11	rmb 2
 V13	rmb 2
 V15	rmb 1
+
 V18	rmb 1 ; is crown active?
 V19	rmb 1 ; is crystal ball active?
 V1A	rmb 1
-V4F	rmb 1
+V4F	rmb 1 ; score digit value
 V50	rmb 2 ; bat x position
 V52	rmb 2 ; bat y position
 V5C	rmb 1 ; bat creation timer
@@ -546,7 +549,7 @@ fontdata fcb $f0,$5f,$17,$80		; A
 	fcb $84,$21,$0f,$80		; L
 	fcb $55,$6b,$58,$80		; M
 	fcb $b6,$63,$18,$80		; N
-	fcb $74,$63,$17,$00		; O (also used for 0)
+	fcb $74,$63,$17,$00		; O
 	fcb $f4,$63,$e8,$00		; P
 	fcb $74,$5e,$1f,$00		; 9
 	fcb $be,$21,$08,$00		; R
@@ -570,10 +573,9 @@ fontdata fcb $f0,$5f,$17,$80		; A
 	fqb %01110100001111010001011100000000 ; 6
 	fqb %11111000010001000100001000000000 ; 7
 	fqb %01110100010111100001011100000000 ; 9
-	fcb $74,$63,$17,$00		; O (also used for 0)
-
+	fcb $74,$63,$17,$00		; 0
 	fcb $00,$00,$00,$00		; space
- fcb $71,$08,$47,$00 ; I
+	fcb $71,$08,$47,$00		; I
 
  IFDEF MCUSTOM
  include map/lines.asm
@@ -750,7 +752,7 @@ LCF85	ldd ,x			; are we at the end of the table?
 LCF92	std ,y			; save end of table flag
 
 LCF94	lbsr LD531
-	clr V03
+	clr V03			; no longer in attract mode
 	ldu #plr1objlist	; point to player one's treasure list
 	lbsr buildobjlist	; build treasure list
 	ldu #plr2objlist	; point to player two's treasure list
@@ -865,7 +867,7 @@ LD05E	lbsr setstartpos	; set default start position
 	clr texttty		; enable the "tty" effect
 	lda #$ff
 	sta VD1			; prevent laser firing during attract mode?
-	sta V03
+	sta V03			; set attract mode flag
 	lbsr LD144
 	lbsr LD1AC
 LD072	ldb PIA0.DA		; read keyboard rows/buttons
@@ -1802,8 +1804,8 @@ LD841	ldb ,u		; treasure x
 	ldu VBF
 	std ,u
 	ldu 2,u
-	lda -1,u
-	lbsr LDF80
+	lda -1,u		; get treasure's score
+	lbsr LDF80		; special handling for crown and crystal ball
 	lbsr addscore
 	ldd VF9			; does the bat exist?
 	beq LD8A2
@@ -1883,8 +1885,8 @@ LD92C	dec ,s			; are we done yet?
 	lda PIA0.DA		; read keyboard row data
 	anda #3			; mask off everything but joystick buttons
 	eora #3			; set to 0 if buttons NOT pressed
-	beq LD93D		; brif no buttons pressed
-	tst V03			; is the joystick button check enabled?
+	beq LD93D		; brif no joystick buttons pressed
+	tst V03			; are we in attract mode?
 	beq LD98A		; brif so - bail on rendering
 LD93D	lda texttty		; do we want a delay between rendering characters?
 	bne LD944		; brif not
@@ -2648,16 +2650,17 @@ drawmazeboth lbsr clearrender	; get a clean render area
 	lbsr drawhoriz		; draw horizontal lines
 	lbra swaprender		; swap screens and return
 
+* Did we just collect a special item?
 LDF80	pshs a
-	cmpa #$50
-	bne LDF8C
+	cmpa #$50	; crown?
+	bne LDF8C	; no
 	lda #$ff
-	sta V18
+	sta V18		; set crown active flag
 	lda ,s
-LDF8C	cmpa #$15
-	bne LDF94
+LDF8C	cmpa #$15	; crystal ball?
+	bne LDF94	; no
 	lda #$ff
-	sta V19
+	sta V19		; set crystal ball active flag
 LDF94	puls a,pc
 
 * Make crystal ball and crown time out eventually
