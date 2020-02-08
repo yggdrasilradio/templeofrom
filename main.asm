@@ -770,7 +770,7 @@ LCF94	lbsr LD531
 	std mazeoffy
 	puls d
 
-	clr VD7
+	clr VD7			; silence tikkatikka sound
 	ldd #1			; set scroll direction to down-right
 	std scrollstep
 	clr texttty		; enable "tty" effect
@@ -1295,10 +1295,10 @@ LD3AE	lda curposy
 	lbsr drawsprite
 LD3B8	rts
 
-LD3B9	lda VD7
-	beq LD3C5
+LD3B9	lda VD7			; tikkatikka sound active?
+	beq LD3C5		; no
 
-	suba #$10
+	suba #$10		; decay sound
 	sta VD7
 	clrb			; set sound output from DAC
 	lbsr LDFD1
@@ -1397,7 +1397,7 @@ LD44F	std VCD
 	clrb
 	stb VC8
 	stb VCA
-	lda #$f0	; tikkatikkatikka sound
+	lda #$f0	; enable tikkatikkatikka sound
 	sta VD7
 
 LD474	lda VC9
@@ -1426,7 +1426,7 @@ LD497	rts
 LD498	lda VC9
 	ldb VC7
 	tst V18	   ; is crown active?
-	beq LD4C4
+	beq LD4C4  ; no
 	pshs b,a
 	adda #3
 	lbsr LD54E ; queue an explosion
@@ -1526,7 +1526,7 @@ LD531	clra
 	std XQUEUE+20
 	std XQUEUE+24
 	std XQUEUE+28
-	clr VD7
+	clr VD7		; silence tikkatikka sound
 	rts
 
 ; Queue an explosion animation
