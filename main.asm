@@ -26,6 +26,13 @@ PIA1.DB	equ $ff22
 PIA1.CB	equ $ff23
 SAM	equ $ffc0
 
+* LED COLORS for Boomerang E2 2Mb memory board
+LEDOFF	equ %00000000
+LEDWHT	equ %00011111
+LEDRED	equ %01011111
+LEDBLU	equ %10011111
+LEDGRN	equ %11011111
+
 ; References to Color Basic ROM APIs
 RSTFLG	equ $71
 RSTVEC	equ $72
@@ -276,6 +283,9 @@ LC06B	leau 2,u		; move to next line to consider
 LC06F	rts
 
 * Draw vertical line
+* A: beginning Y coordinate
+* B: ending Y coordinate
+* X: X coordinate
 LC070	pshs a			; save top coordinate
 	pshs b			; save bottom coordinate
 	tfr x,d			; stuff the horizontal coordinate into an accumulator
@@ -306,6 +316,7 @@ LC091	sta ,x			; set pixel for line
 
 LC09A	fcb $40,$10,$04,$01	; pixel masks for maze walls (color #1)
 
+; Render the horizontal lines of the map
 drawhoriz leau LC36A,pcr	; point to short circuit offsets for horizontal drawing
 	ldd mazeoffy		; get vertical offset of screen
 	bge LC0A9		; brif valid coordinate
@@ -688,6 +699,8 @@ LCF50	nop			; flag for valid warm start routine
 	lds #STACK		; put stack somewhere safe
 	sta RSTFLG		; mark reset vector as valid
 
+	lbsr LEDoff		; turn off Boomerang LED
+
 	* Default to composite unless it's a Coco3
 	lda #$f8
 
@@ -771,6 +784,7 @@ LCF94	lbsr LD531
 	puls d
 
 	clr VD7			; silence tikkatikka sound
+	lbsr LEDoff		; turn off the Boomerang LED
 	ldd #1			; set scroll direction to down-right
 	std scrollstep
 	clr texttty		; enable "tty" effect
@@ -1298,9 +1312,13 @@ LD3B8	rts
 LD3B9	lda VD7			; tikkatikka sound active?
 	beq LD3C5		; no
 
-	suba #$10		; decay sound
+	suba #$10		; decay sound amplitude (will go silent at zero)
+	cmpa #$d0
+	bhi no@
+	lbsr LEDoff		; turn off Boomerang LED
+no@
 	sta VD7
-	clrb			; set sound output from DAC
+	;clrb			; set sound output from DAC
 	lbsr LDFD1
 
 LD3C5	ldu renderscr		; get start address of render screen
@@ -1399,6 +1417,7 @@ LD44F	std VCD
 	stb VCA
 	lda #$f0	; enable tikkatikkatikka sound
 	sta VD7
+	lbsr LEDwht	; turn on the Boomerang LED
 
 LD474	lda VC9
 	ldb VC7
@@ -1527,6 +1546,7 @@ LD531	clra
 	std XQUEUE+24
 	std XQUEUE+28
 	clr VD7		; silence tikkatikka sound
+	lbsr LEDoff	; turn off the Boomerang LED
 	rts
 
 ; Queue an explosion animation
@@ -2120,7 +2140,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 
 * scoring bleep
 LDAEF	pshs u,b,a
-	clrb		; enable sound output from DAC
+	;clrb		; enable sound output from DAC
 	lbsr LDFD1
 	clrb
 LDAF6	tfr b,a
@@ -2143,7 +2163,7 @@ LDB08	inca
 dobleep	pshs u,b,a		; save registers
 	tst texttty		; is the tty effect enabled?
 	bne LDB35		; brif not
-	clrb			; enable sound output from DAC
+	;clrb			; enable sound output from DAC
 	lbsr LDFD1
 	clrb			; initialize output level to 0
 LDB1C	tfr b,a			; save output level
@@ -2696,6 +2716,7 @@ LDFC1	stb PIA0.DB
 	bne LDFD0	; not BREAK
 	clra		; hard reset to RSDOS
 	tfr a,dp
+	lbsr LEDoff	; turn off Boomerang LED
 	lda #$88
 	sta $ff90	; turn off MMU
 	sta $ffd8	; slow CPU
@@ -2704,8 +2725,9 @@ LDFC1	stb PIA0.DB
 	jmp [$fffe]
 LDFD0	rts
 
-LDFD1	jsr SETMUX		; program analog MUX for source in B
-	jmp SNDON		; enable analog MUX (enable sound output)
+LDFD1	clrb			; enable sound output
+	jsr SETMUX		; program analog MUX
+	jmp SNDON		; enable analog MUX
 
 * VICTORY
 LDFD7	pshs u,b,a		; save registers
@@ -2731,5 +2753,37 @@ IRQ	lda PIA0.DB		; clear interrupt
 	dec tick
 IRQ@	inc tock
 	rti
+
+* Routines to manipulate the Boomerang LED
+
+LEDoff
+ pshs a
+ lda #LEDOFF
+ sta $FFEF
+ puls a,pc
+
+LEDred
+ pshs a
+ lda #LEDRED
+ sta $FFEF
+ puls a,pc
+
+LEDgrn
+ pshs a
+ lda #LEDGRN
+ sta $FFEF
+ puls a,pc
+
+LEDblu
+ pshs a
+ lda #LEDBLU
+ sta $FFEF
+ puls a,pc
+
+LEDwht
+ pshs a
+ lda #LEDWHT
+ sta $FFEF
+ puls a,pc
 
 	end START
