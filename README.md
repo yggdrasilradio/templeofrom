@@ -37,6 +37,8 @@ Artifacting color comes up correctly on a Coco3 without need of a reset.
 
 RGB on a Coco3 is now supported.
 
+If you have a Boomerang E2 board, the LED will light briefly when you fire your laser.
+
 Added two more types of monsters:
 
 * Ghosts (slow but invisible till you aggro them)
