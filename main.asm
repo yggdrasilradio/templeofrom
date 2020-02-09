@@ -26,14 +26,7 @@ PIA1.DB	equ $ff22
 PIA1.CB	equ $ff23
 SAM	equ $ffc0
 
-* LED COLORS for Boomerang E2 2Mb memory board
-LEDOFF	equ %00000000
-LEDWHT	equ %00011111
-LEDRED	equ %01011111
-LEDBLU	equ %10011111
-LEDGRN	equ %11011111
-
-; References to Color Basic ROM APIs
+* References to Color Basic ROM APIs
 RSTFLG	equ $71
 RSTVEC	equ $72
 
@@ -276,7 +269,7 @@ LC059	cmpd #$5f		; are we off the bottom of the screen
 LC061	lda ,s			; get adjusted top coordinate back
 	cmpb ,s+		; is the bottom coordinate below the top coordinate?
 	bls LC01C		; brif so - we don't need to render anything
-	bsr LC070		; draw line
+	bsr vline		; draw line
 	bra LC01C		; go check next line to render
 LC06B	leau 2,u		; move to next line to consider
 	bra LC01C		; go render it if necessary
@@ -286,7 +279,7 @@ LC06F	rts
 * A: beginning Y coordinate
 * B: ending Y coordinate
 * X: X coordinate
-LC070	pshs a			; save top coordinate
+vline	pshs a			; save top coordinate
 	pshs b			; save bottom coordinate
 	tfr x,d			; stuff the horizontal coordinate into an accumulator
 	andb #3			; figure out which pixel in the byte we're at
@@ -370,7 +363,7 @@ LC0EE	cmpd #$7f		; are we off the right side of the screen?
 LC0F6	lda ,s			; get left coordinate back
 	cmpb ,s+		; is right coordinate left of left coordinate?
 	bls LC0B2		; brif so (or same as)
-	bsr LC105		; go draw line
+	bsr hline		; go draw line
 	bra LC0B2		; go handle next line
 LC100	leau 2,u		; move to next set of line data
 	bra LC0B2		; go render it if needed
@@ -380,7 +373,7 @@ LC104	rts
 * A: beginning X coordinate
 * B: ending X coordinate
 * X: Y coordinate
-LC105	pshs a			; save left coordinate
+hline	pshs a			; save left coordinate
 	exg x,d			; save coordinates and get vertical offset
 	tfr b,a			; put vertical coordinate in A
 	ldb ,s			; get left coordinate
@@ -1318,8 +1311,7 @@ LD3B9	lda VD7			; tikkatikka sound active?
 	lbsr LEDoff		; turn off Boomerang LED
 no@
 	sta VD7
-	;clrb			; set sound output from DAC
-	lbsr LDFD1
+	lbsr LDFD1		; enable sound output from DAC
 
 LD3C5	ldu renderscr		; get start address of render screen
 	leau $c00,u		; point to end of screen
@@ -2140,8 +2132,7 @@ LDACF	fdb $0c30 ; ..W..W.. Here's the bat!
 
 * scoring bleep
 LDAEF	pshs u,b,a
-	;clrb		; enable sound output from DAC
-	lbsr LDFD1
+	lbsr LDFD1	; enable sound output from DAC
 	clrb
 LDAF6	tfr b,a
 	comb 
@@ -2163,8 +2154,7 @@ LDB08	inca
 dobleep	pshs u,b,a		; save registers
 	tst texttty		; is the tty effect enabled?
 	bne LDB35		; brif not
-	;clrb			; enable sound output from DAC
-	lbsr LDFD1
+	lbsr LDFD1		; enable sound output from DAC
 	clrb			; initialize output level to 0
 LDB1C	tfr b,a			; save output level
 	comb			; invert level
@@ -2754,35 +2744,74 @@ IRQ	lda PIA0.DB		; clear interrupt
 IRQ@	inc tock
 	rti
 
+* LED COLORS for Boomerang E2 2Mb memory board
+
+LEDOFF	equ %00000000
+LEDWHT	equ %00011111
+LEDRED	equ %01011111
+LEDBLU	equ %10011111
+LEDGRN	equ %11011111
+
 * Routines to manipulate the Boomerang LED
 
-LEDoff
+LEDoff		; LED off
  pshs a
  lda #LEDOFF
  sta $FFEF
  puls a,pc
 
-LEDred
+LEDred		; LED off
  pshs a
+ clr $FFEF
  lda #LEDRED
  sta $FFEF
  puls a,pc
 
-LEDgrn
+LEDgrn		; LED green
  pshs a
+ clr $FFEF
  lda #LEDGRN
  sta $FFEF
  puls a,pc
 
-LEDblu
+LEDblu		; LED blue
  pshs a
+ clr $FFEF
  lda #LEDBLU
  sta $FFEF
  puls a,pc
 
-LEDwht
+LEDwht		; LED white
  pshs a
+ clr $FFEF
  lda #LEDWHT
+ sta $FFEF
+ puls a,pc
+
+LEDmag		; LED magenta
+ pshs a
+ clr $FFEF
+ lda #LEDRED
+ sta $FFEF
+ lda #LEDBLU
+ sta $FFEF
+ puls a,pc
+
+LEDyel		; LED yellow
+ pshs a
+ clr $FFEF
+ lda #LEDRED
+ sta $FFEF
+ lda #LEDGRN
+ sta $FFEF
+ puls a,pc
+
+LEDcya		; LED cyan
+ pshs a
+ clr $FFEF
+ lda #LEDGRN
+ sta $FFEF
+ lda #LEDBLU
  sta $FFEF
  puls a,pc
 
