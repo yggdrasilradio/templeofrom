@@ -2213,7 +2213,9 @@ LDB78	ldd V52			; bat y position
 LDB81	rts
 
 * PLAYER DIED
-LDB82	lda #10			; bleep 10x
+LDB82	
+	lbsr LEDoff		; turn off Boomerang LED
+	lda #10			; bleep 10x
 	pshs a
 LDB86	lbsr LDAEF
 	dec ,s
@@ -2724,7 +2726,9 @@ LDFD1	clrb			; enable sound output
 	jmp SNDON		; enable analog MUX
 
 * VICTORY
-LDFD7	pshs u,b,a		; save registers
+LDFD7	
+	lbsr LEDoff		; turn off Boomerang LED
+	pshs u,b,a		; save registers
 	ldu #PIA1.DB		; point to PIA1 Data B
 	lda ,u			; fetch current VDG settings
 	pshs a			; save it
