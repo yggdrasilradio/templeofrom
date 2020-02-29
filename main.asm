@@ -37,9 +37,9 @@ RSTVEC	equ $72
 	; start right after RSTFLG and RSTVEC so we don't overlay them
 	org $74
 
-monsterptr rmb 2 ; pointer to current player's monster locations
-portaloff rmb 1	; nonzero means portals are currently disabled
-V03	rmb 1 ; attract mode flag
+monsterptr rmb 2	; pointer to current player's monster locations
+portaloff rmb 1		; nonzero means portals are currently disabled
+V03	rmb 1		; attract mode flag
 
 * Used by music routine
 V05	rmb 2
@@ -68,10 +68,9 @@ mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
 mazeoffy rmb 2 ; vertical offset in maze of top left of screen
 curposx	rmb 2 ; current player horizontal screen position
 curposy	rmb 2 ; current player vertical screen position
-tcoord	rmb 1
-renderscr rmb 2
-endclear rmb 1 ; lowest address (highest location on screen) to clear
-VBD	rmb 1
+tcoord	rmb 1	; temporary coordinate storage
+renderscr rmb 2	; current render screen location
+endclear rmb 2	; lowest address (highest location on screen) to clear
 color	rmb 1
 VBF	rmb 2
 VC1	rmb 2
@@ -90,10 +89,10 @@ VD0	rmb 1
 VD1	rmb 1 ; "walk through walls" flag
 scorep1	rmb 3 ; player one's score
 dead	rmb 1 ; player dead flag
-VD6	rmb 1
+VD6	rmb 1 ; zero suppress flag
 VD7	rmb 1 ; laser sound value
-VD8	rmb 1
-VD9	rmb 1
+VD8	rmb 1 ; render location Y
+VD9	rmb 1 ; render location X
 VDA	rmb 1	; treasure count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1 ; number of treasures remaining
@@ -2708,15 +2707,16 @@ LDFC1	stb PIA0.DB
 	sta PIA1.DB	; change video mode
 	tsta		; hard reset to RSDOS on BREAK
 	bne LDFD0	; not BREAK
-	clra		; hard reset to RSDOS
-	tfr a,dp
 	lbsr LEDoff	; turn off Boomerang LED
-	lda #$88
+	ldd #$0088	; hard reset to RSDOS
+	tfr a,dp	; set direct page 0
+	sta $FEED	; reestablish interrupt vectors on startup
 	sta $ff90	; turn off MMU
 	sta $ffd8	; slow CPU
 	sta $ffde	; turn on ROMs
-	clr $0071
-	jmp [$fffe]
+	sta $71		; force hard reset
+	jmp [$fffe]	; jump thru reset vector
+
 LDFD0	rts
 
 LDFD1	clrb			; enable sound output
