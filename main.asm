@@ -115,7 +115,7 @@ curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 2 ; bat sprite (or zero if bat inactive)
 VFA	rmb 1 ; bat wing flap state
 POTVAL	rmb 4 ; joystick values
-temp	rmb 1
+temp	rmb 1 ; temporary pixel mask storage
 tick	rmb 1 ; IRQ countdown timer
 tock	rmb 1 ; IRQ countup timer
 aggro	rmb 1 ; aggro flag
