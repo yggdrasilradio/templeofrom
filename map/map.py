@@ -77,6 +77,9 @@ for x in range(4, width - 1):
 if i <> 0:
 	print "There are " + str(i) + " misaligned sprites"
 
+if BLACK == WHITE:
+	print "Color mapping layer is missing"
+
 # Generate lines.asm
 print 'Generating lines.asm'
 maxx = 0
