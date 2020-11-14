@@ -8,7 +8,8 @@ and expanded the game by adding new features.
 
 Feel free to contact me via the #temple-of-rom-ii channel on [Discord](https://discord.gg/4J5nHXm).
 
-Also the game is for sale at [https://templeofrom.com](https://templeofrom.com).
+Also this updated game is for sale at [https://templeofrom.com](https://templeofrom.com), which gives a little history
+of the game and also provides a free online level builder!
 
 ### Changes
 
