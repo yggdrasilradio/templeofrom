@@ -5,6 +5,8 @@
 *.swp
 *.dsk
 *.DSK
+origmap.gif
+notes
 map/*.asm
 cfg
 backups

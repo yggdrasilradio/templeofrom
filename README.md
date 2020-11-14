@@ -3,17 +3,12 @@ Temple of ROM II
 
 ![](images/newmap.jpg)
 
-Starting from a disassembly of a Temple of ROM cart by William Astle, I've managed to build the game successfully.
-I'm hoping to expand the game by adding new features:
+Starting from a disassembly of a Temple of ROM cart by William Astle, I've resurrected my 1980s game Temple of ROM,
+and expanded the game by adding new features.
 
-* Expand level -- DONE
-* More rooms, monsters and treasures -- DONE
-* Different monsters -- DONE
-* What else?  Dunno!
+Feel free to contact me via the #temple-of-rom-ii channel on [Discord](https://discord.gg/4J5nHXm).
 
-I'm hoping to have something available for sale eventually, but the primary goal of this project is to have *fun*!
-Please do look over my shoulder as I work on this and feel free to contact me
-via the #temple-of-rom-ii channel on [Discord](https://discord.gg/4J5nHXm) .
+Also the game is for sale at [https://templeofrom.com](https://templeofrom.com).
 
 ### Changes
 

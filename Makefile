@@ -26,4 +26,4 @@ backup:
 	tar -cvf backups/`date +%Y-%m-%d_%H-%M-%S`.tar Makefile *.asm
 
 install:
-	rcp temple.dsk ricka@rickadams.org:/home/ricka/rickadams.org/downloads/TEMPLE.DSK
+	rcp temple.dsk ricka@rickadams.org:/home/ricka/templeofrom.com/files/TEMPLE2.DSK
