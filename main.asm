@@ -1927,6 +1927,7 @@ LD959	cmpb ,y+		; are we at the right index point in the font?
 	bra LD959		; go check next index location
 LD961	ldd 3,s			; get render coordinates
 	lbsr drawglyph		; render character to screen
+
 	lbsr dupheader		; copy rendered text to second screen
 	lbsr checkcssel		; check color set selection keys
 	lbsr dobleep		; do the bleep if required
@@ -2523,52 +2524,55 @@ LDDFB	pshs b			; save X coordinate
 	stb ,x			; set new pixel data on screen
 	rts
 
-drawglyph	pshs b,a	; save render coordinates
-	pshs b			; save original X coordinate for later
-	lda #5			; render 5 bits
-	pshs a			; save counter
-	ldd 2,u			; save font data bytes on stack (4 of them)
+* U: points to font data
+* B: X coordinate
+* A: Y coordinate
+drawglyph pshs b,a	; save render coordinates
+	pshs b		; save original X coordinate for later
+	lda #5		; render 5 bits
+	pshs a		; save counter
+	ldd 2,u		; save font data bytes on stack (4 of them)
 	pshs b,a
 	ldd ,u
 	pshs b,a
-LDE28	lda ,s			; check if remaining font data is all 0s
+LDE28	lda ,s		; check if remaining font data is all 0s
 	ora 1,s
 	ora 2,s
 	ora 3,s
-	beq LDE55		; brif all 0s - no point continuing more (and it's how we exit anyway)
-	clra			; clear out temporary (could skip this, the rola, and tsta below))
-	lsl 3,s			; fetch bit from font data
+	beq LDE55	; brif all 0s - no point continuing more (and it's how we exit anyway)
+	clra		; clear out temporary (could skip this, the rola, and tsta below))
+	lsl 3,s		; fetch bit from font data
 	rol 2,s
 	rol 1,s
 	rol ,s
-	rola			; shift pixel bit into A
-	tsta			; do we have a bit?
-	beq LDE43		; brif not (could be bcc and lose the rola/tsta above)
-	ldd 6,s			; get render coordinates
-	bsr LDDFB		; render pixel
-LDE43	inc 7,s			; bump render X coordinate
-	dec 4,s			; done all 5 bits?
-	bne LDE28		; brif not
-	inc 6,s			; bump Y coordinate
-	lda 5,s			; restore original X coordinate
+	rola		; shift pixel bit into A
+	tsta		; do we have a bit?
+	beq LDE43	; brif not (could be bcc and lose the rola/tsta above)
+	ldd 6,s		; get render coordinates
+	bsr LDDFB	; render pixel
+LDE43	inc 7,s		; bump render X coordinate
+	dec 4,s		; done all 5 bits?
+	bne LDE28	; brif not
+	inc 6,s		; bump Y coordinate
+	lda 5,s		; restore original X coordinate
 	sta 7,s
-	lda #5			; reset render counter
+	lda #5		; reset render counter
 	sta 4,s
-	bra LDE28		; go render another row of pixels
-LDE55	leas 8,s		; clean up temporaries
+	bra LDE28	; go render another row of pixels
+LDE55	leas 8,s	; clean up temporaries
 	rts
 
-LDE58	lda curposy		; get current vertical coordinate on screen
-	ldb curposx		; get current horizontal coordinate on screen
-	deca			; calculate one pixel up and left (bottom right of comparison box)
+LDE58	lda curposy	; get current vertical coordinate on screen
+	ldb curposx	; get current horizontal coordinate on screen
+	deca		; calculate one pixel up and left (bottom right of comparison box)
 	decb
-	sta hitx2			; save the calculated coordinates
+	sta hitx2	; save the calculated coordinates
 	stb hity2
-	suba #2			; calculate two more pixels up and left (top left of comparison box)
+	suba #2		; calculate 2 more pixels up and left (top left of comparison box)
 	subb #2
-	sta hitx1			; save those calculated coordinates
+	sta hitx1	; save those calculated coordinates
 	stb hity1
-	tst portaloff		; are portals active?
+	tst portaloff	; are portals active?
 	beq LDE70		; brif so - don't adjust counter
 	inc portaloff		; bump portal disable count (will eventually wrap to 0 and re-enable portals)
 
@@ -2768,7 +2772,7 @@ LEDoff		; LED off
  sta $FFEF
  puls a,pc
 
-LEDred		; LED off
+LEDred		; LED red
  pshs a
  clr $FFEF
  lda #LEDRED
