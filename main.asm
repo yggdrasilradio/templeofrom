@@ -75,11 +75,11 @@ color	rmb 1	; pset color
 VBF	rmb 2	; attract mode mute flag
 
 * player position
-VC1	rmb 2	; screen pointer
+VC1	rmb 2	; screen pointer (unused)
 VC3	rmb 1	; signed joystick x delta
 VC4	rmb 1	; signed joystick y delta
-VC5	rmb 1
-VC6	rmb 1
+VC5	rmb 1   ; last nonzero signed joystick x delta (used for laser and walk animation direction)
+VC6	rmb 1   ; last nonzero signed joystick y delta (used for laser direction)
 
 * line drawing
 VC7	rmb 1
@@ -1065,7 +1065,7 @@ LD1BE	lbsr swaprender		; switch screens
 	lbra LD375		; animate running man and return
 
 * ADJUST PLAYER POSITION
-* VC1 VC3 VC4 VC5
+* VC1 VC3 VC4 VC5 VC6
 move	;jsr SNDOFF		; turn off sound
 	jsr GETJOY		; read joysticks
 	ldb curplayer		; get current player number
@@ -1097,7 +1097,7 @@ LD22D	lda curposy		; read the current vertical position
 	sta tcoord		; save it for later
 	ldb 1,u			; read horizontal axis
 	subb #$20		; subtract midpoint from vertical position
-	stb VC4			; save reading
+	stb VC4			; save adjusted position
 	sex			; sign extend
 	lslb			; shift left three bits as for horizontal position
 	rola
@@ -1112,7 +1112,7 @@ LD22D	lda curposy		; read the current vertical position
 	lda tcoord		; get back saved position
 	sta curposy		; restore it
 
-LD24B	stx VC1			; save screen pointer calculated in checkcollision
+LD24B	stx VC1			; save screen pointer calculated in checkcollision (unused)
 	ldd VC3			; are joystick x delta and y delta both zero?
 	beq LD253
 	std VC5
@@ -1304,7 +1304,7 @@ LD3A3	puls cc
 	bvc LD3AE
 	tst V19
 	bne LD3B8
-	leau $10,u		; advance to next player walk animation
+	leau $10,u		; advance to next player walk sprite
 LD3AE	lda curposy
 	suba #2
 	ldb curposx
@@ -1364,14 +1364,17 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
 	lbne LD495		; clear "walk through walls" timer and exit if not pressed
 	tst VD1			; button is pressed, is "walk through walls" timer active?
-	lbne LD4C7		; if so, update it
-	inc VD1			; init "walk through walls" timer
+	lbne LD4C7		; if so, laser has already fired, update the timer and bail
 
+	* SHOOT LASER
+	inc VD1			; init "walk through walls" timer to 1
 	clr VCF
 	clr VD0
+
 	lda #$aa		; red
 	sta color
 
+	* VCB = vC5 * 8
 	ldb VC5
 	lslb
 	sex
@@ -1381,6 +1384,7 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	rola
 	std VCB
 
+	* VCD = VC6 * 8
 	ldb VC6
 	lslb
 	sex
