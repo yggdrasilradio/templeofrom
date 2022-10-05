@@ -52,9 +52,9 @@ V11	rmb 2
 V13	rmb 2
 V15	rmb 1
 
-V18	rmb 1 ; is crown active?
-V19	rmb 1 ; is crystal ball active?
-V1A	rmb 1
+V18	rmb 1 ; crown active timer ($FF, counts down)
+V19	rmb 1 ; crystal ball active timer ($FF, counts down)
+V1A	rmb 1 ; player walk animation index
 V4F	rmb 1 ; score digit value
 V50	rmb 2 ; bat x position
 V52	rmb 2 ; bat y position
@@ -71,13 +71,17 @@ curposy	rmb 2 ; current player vertical screen position
 tcoord	rmb 1	; temporary coordinate storage
 renderscr rmb 2	; current render screen location
 endclear rmb 2	; lowest address (highest location on screen) to clear
-color	rmb 1
-VBF	rmb 2
-VC1	rmb 2
-VC3	rmb 1
-VC4	rmb 1
+color	rmb 1	; pset color
+VBF	rmb 2	; attract mode mute flag
+
+* player position
+VC1	rmb 2	; screen pointer
+VC3	rmb 1	; signed joystick x delta
+VC4	rmb 1	; signed joystick y delta
 VC5	rmb 1
 VC6	rmb 1
+
+* line drawing
 VC7	rmb 1
 VC8	rmb 1
 VC9	rmb 1
@@ -86,6 +90,7 @@ VCB	rmb 2
 VCD	rmb 2
 VCF	rmb 1
 VD0	rmb 1
+
 VD1	rmb 1 ; "walk through walls" flag
 scorep1	rmb 3 ; player one's score
 dead	rmb 1 ; player dead flag
@@ -109,7 +114,7 @@ plr1state	rmb 6 ; player two game state (6 bytes)
 plr2state	rmb 6 ; player one game state (6 bytes)
 scorep2		rmb 3 ; player two's score
 scoreptr	rmb 2 ; pointer to current player's score
-texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
+texttty		rmb 1 ; whether the "tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 2 ; bat sprite (or zero if bat inactive)
@@ -872,7 +877,7 @@ LD05E	lbsr setstartpos	; set default start position
 	lbsr drawmazeboth	; draw maze on both screens
 	clr texttty		; enable the "tty" effect
 	lda #$ff
-	sta VD1			; prevent laser firing during attract mode?
+	sta VD1			; clear "walk through walls" flag
 	sta V03			; set attract mode flag
 	lbsr LD144
 	lbsr LD1AC
@@ -1067,7 +1072,8 @@ move	;jsr SNDOFF		; turn off sound
 	asrb			; set to 0 for player 2, 2 for player 1
 	lslb
 	ldu #POTVAL		; point to joystick values
-	leau b,u		; point to the correct axes for the active placer
+	leau b,u		; point to the correct axes for the active player
+
 	lda curposx		; get current horizontal position
 	sta tcoord		; save it for later
 	ldb ,u			; read vertical axis
@@ -1086,6 +1092,7 @@ move	;jsr SNDOFF		; turn off sound
 	beq LD22D		; brif not
 	lda tcoord		; get saved position
 	sta curposx		; restore it
+
 LD22D	lda curposy		; read the current vertical position
 	sta tcoord		; save it for later
 	ldb 1,u			; read horizontal axis
@@ -1104,8 +1111,9 @@ LD22D	lda curposy		; read the current vertical position
 	beq LD24B		; brif not
 	lda tcoord		; get back saved position
 	sta curposy		; restore it
+
 LD24B	stx VC1			; save screen pointer calculated in checkcollision
-	ldd VC3
+	ldd VC3			; are joystick x delta and y delta both zero?
 	beq LD253
 	std VC5
 LD253	rts
@@ -1296,12 +1304,12 @@ LD3A3	puls cc
 	bvc LD3AE
 	tst V19
 	bne LD3B8
-	leau $10,u
+	leau $10,u		; advance to next player walk animation
 LD3AE	lda curposy
 	suba #2
 	ldb curposx
 	decb
-	lbsr drawsprite
+	lbsr drawsprite		; draw player sprite
 LD3B8	rts
 
 LD3B9	lda VD7			; tikkatikka sound active?
@@ -1354,14 +1362,16 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 * Fire laser if joystick button pressed
 LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
-	lbne LD495		; brif button not pressed
-	tst VD1
-	lbne LD4C7		; advance "walk through walls" timer
-	inc VD1			; start timer
+	lbne LD495		; clear "walk through walls" timer and exit if not pressed
+	tst VD1			; button is pressed, is "walk through walls" timer active?
+	lbne LD4C7		; if so, update it
+	inc VD1			; init "walk through walls" timer
+
 	clr VCF
 	clr VD0
 	lda #$aa		; red
 	sta color
+
 	ldb VC5
 	lslb
 	sex
@@ -1370,6 +1380,7 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	lslb
 	rola
 	std VCB
+
 	ldb VC6
 	lslb
 	sex
@@ -1378,20 +1389,25 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	lslb
 	rola
 	std VCD
+
 LD438	clra
 	pshs a
+
 	ldd VCB
 	lbsr LD4CF
 	bne LD444
 	inc ,s
 LD444	std VCB
+
 	ldd VCD
 	lbsr LD4CF
 	bne LD44F
 	inc ,s
 LD44F	std VCD
+
 	lda ,s+
 	beq LD438
+
 	ldd VCB
 	asra
 	rorb
@@ -1469,11 +1485,11 @@ LD4C7	lda VD1
 LD4CF	tsta		; if positive,
 	blt LD4DC
 	cmpd #$100
-	bge LD4E7	;	and less than $100,
-	lslb
+	bge LD4E7
+	lslb		;	and less than $100
 	rola		;       	D = 2 * D
-	bra LD4E4	; if zero or negative,
-LD4DC	cmpd #$ff00	
+	bra LD4E4	; 		and clear carry
+LD4DC	cmpd #$ff00	; if zero or negative,
 	ble LD4E7	; 	and greater than $FF00,
 	lslb
 	rola		;		D = 2 * D
