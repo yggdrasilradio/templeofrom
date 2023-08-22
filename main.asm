@@ -42,15 +42,15 @@ portaloff rmb 1		; nonzero means portals are currently disabled
 V03	rmb 1		; attract mode flag
 
 * Used by music routine
-V05	rmb 2
-V07	rmb 2
-V09	rmb 2
-V0B	rmb 2
-V0D	rmb 2
-V0F	rmb 2
-V11	rmb 2
-V13	rmb 2
-V15	rmb 1
+V05	rmb 2 ; note 1 value
+V07	rmb 2 ; note 2 value
+V09	rmb 2 ; note 3 value
+V0B	rmb 2 ; note 4 value
+V0D	rmb 2 ; note 1 pitch delta
+V0F	rmb 2 ; note 2 pitch delta
+V11	rmb 2 ; note 3 pitch delta
+V13	rmb 2 ; note 4 pitch delta
+V15	rmb 1 ; note duration
 
 V18	rmb 1 ; crown active timer ($FF, counts down)
 V19	rmb 1 ; crystal ball active timer ($FF, counts down)
@@ -88,17 +88,17 @@ VC9	rmb 1
 VCA	rmb 1
 VCB	rmb 2
 VCD	rmb 2
-VCF	rmb 1
-VD0	rmb 1
+VCF	rmb 1	; laser y position
+VD0	rmb 1	; laser x position
 
-VD1	rmb 1 ; "walk through walls" flag
+VD1	rmb 1 ; fire button timer (0: not depressed, >0: depressed, counts up to FF while still depressed)
 scorep1	rmb 3 ; player one's score
 dead	rmb 1 ; player dead flag
 VD6	rmb 1 ; zero suppress flag
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1 ; render location Y
 VD9	rmb 1 ; render location X
-VDA	rmb 1	; treasure count
+VDA	rmb 1 ; treasure count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1 ; number of treasures remaining
 
@@ -521,13 +521,10 @@ authmess fcb 13
 	fcc 'BY RICK ADAMS '
 
 ;fest1 fcb 10
-	;fcc "WELCOME TO"
-
-;cocot  fcb 16
-;	fcc "COCOTALK EDITION"
+;	fcc "WELCOME TO"
 
 ;fest2 fcb 13
-	;fcc "COCOFEST 2019"
+;	fcc "COCOFEST 2023"
 
 ;licmess fcb 11
 ;	fcc 'LICENSED TO '
@@ -701,7 +698,7 @@ LCF50	nop			; flag for valid warm start routine
 	* Default to composite unless it's a Coco3
 	lda #$f8
 
-	* "You got your Coco3 yet?"
+	* "Hey, you got your CoCo 3 yet?"
 	ldx $FFFE
 	cmpx #$8C1B
 	bne notcoco3
@@ -837,17 +834,17 @@ LCFF1	lbsr showmess		; show the "TEMPLE OF ROM" message
 	;lda #20		; scroll for 20 steps
 	;lbsr scrollmaze	; do the scrolling
 
-	;leau fest1+1,pcr	; "Welcome to"
-	;lbsr showmess		; show it
-	;beq LD05E		; brif button pressed
-	;lda #20		; scroll for 20 steps
-	;lbsr scrollmaze	; do the scrolling
+;	leau fest1+1,pcr	; "Welcome to"
+;	lbsr showmess		; show it
+;	beq LD05E		; brif button pressed
+;	lda #20			; scroll for 20 steps
+;	lbsr scrollmaze		; do the scrolling
 
-	;leau fest2+1,pcr	; "CocoFEST 2019"
-	;lbsr showmess		; show it
-	;beq LD05E		; brif button pressed
-	;lbsr scrolllong	; do a long scroll
-	;bne LD05E		; brif button pressed
+;	leau fest2+1,pcr	; "CocoFEST 20XX"
+;	lbsr showmess		; show it
+;	beq LD05E		; brif button pressed
+;	lbsr scrolllong		; do a long scroll
+;	bne LD05E		; brif button pressed
 
 	;leau licmess+1,pcr	; point to licensing message
 	;lbsr showmess		; show it
@@ -877,7 +874,7 @@ LD05E	lbsr setstartpos	; set default start position
 	lbsr drawmazeboth	; draw maze on both screens
 	clr texttty		; enable the "tty" effect
 	lda #$ff
-	sta VD1			; clear "walk through walls" flag
+	sta VD1			; disable laser
 	sta V03			; set attract mode flag
 	lbsr LD144
 	lbsr LD1AC
@@ -959,7 +956,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1			; clear "walk through walls" flag
+	clr VD1			; clear fire button timer
 	ldu #plr1monsters	; point to player one's monster locations
 	stu monsterptr		; save as monster location pointer
 	ldu #scorep1		; point to player one's score
@@ -1007,7 +1004,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1			; clear "walk through walls" flag
+	clr VD1			; clear fire button timer
 	ldu #plr2monsters	; point to player two's monster locations
 	stu monsterptr		; set as monster location pointer
 	ldu #scorep2		; point to player two's score
@@ -1065,7 +1062,6 @@ LD1BE	lbsr swaprender		; switch screens
 	lbra LD375		; animate running man and return
 
 * ADJUST PLAYER POSITION
-* VC1 VC3 VC4 VC5 VC6
 move	;jsr SNDOFF		; turn off sound
 	jsr GETJOY		; read joysticks
 	ldb curplayer		; get current player number
@@ -1213,9 +1209,9 @@ checkcollision lda curposy	; get current vertical position
 	bne LD30F		; brif so
 	bitb $41,x		; do we collide at the next byte two rows down?
 LD30F	pshs cc			; save collision state
-	lda VD1			; can walk through walls?
+	lda VD1			; is fire button timer FF?
 	inca
-	bne LD31B		; no
+	bne LD31B		; if it is, allow walking through walls (easter egg)
 	* walk through walls
 	orcc #4			; set Z (no collision)
 	leas 1,s		; clean stack
@@ -1363,11 +1359,11 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
 	lbne LD495		; clear "walk through walls" timer and exit if not pressed
-	tst VD1			; button is pressed, is "walk through walls" timer active?
-	lbne LD4C7		; if so, laser has already fired, update the timer and bail
+	tst VD1			; was fire button depressed last time?
+	lbne LD4C7		; if so, laser has already fired, update the fire button timer and bail
 
 	* SHOOT LASER
-	inc VD1			; init "walk through walls" timer to 1
+	inc VD1			; init fire button timer to 1
 	clr VCF
 	clr VD0
 
@@ -1416,21 +1412,27 @@ LD44F	std VCD
 	asra
 	rorb
 	std VCB
+
 	ldd VCD
 	asra
 	rorb
 	std VCD
+
 	ldb curposx
 	incb
 	stb VC7
+
 	ldb curposy
 	decb
 	stb VC9
+
 	clrb
 	stb VC8
 	stb VCA
+
 	lda #$f0	; enable tikkatikkatikka sound
 	sta VD7
+
 	lbsr LEDwht	; turn on the Boomerang LED
 
 LD474	lda VC9
@@ -1453,7 +1455,7 @@ LD487	ldd VCB
 	std VC9
 	bra LD474
 
-LD495	clr VD1		; reset "walk through walls" timer
+LD495	clr VD1		; reset fire button timer
 LD497	rts
 
 LD498	lda VC9
@@ -1478,7 +1480,7 @@ LD498	lda VC9
 	subb #3
 LD4C4	lbra LD54E 	; queue an explosion
 
-* Advance "walk through walls" timer
+* Advance fire button timer (counts how many times we've found it depressed)
 LD4C7	lda VD1
 	inca		; count up
 	beq LD497	; but not if it's $ff
