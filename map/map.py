@@ -20,7 +20,7 @@ def lineout(v1, c, v2):
 	v1 = v1 / 4
 	c = c / 4
 	v2 = v2 / 4
-	if v1 <> v2:
+	if v1 != v2:
 		nsegments = int((v2 - v1) / int(127 / 4)) + 1
 		if nsegments > 1:
 			r = r + '* fcb ' + str(c) + ',' + str(v1) + ',' + str(v2) + ' in ' + str(nsegments) + ' segments:\n'
@@ -72,9 +72,9 @@ i = 0
 for x in range(4, width - 1):
 	for y in range(4, height - 1):
 		if pix[x, y] == WHITE:
-			if x % 4 <> 0:
+			if x % 4 != 0:
 				i += 1
-if i <> 0:
+if i != 0:
 	print "There are " + str(i) + " misaligned sprites"
 
 if BLACK == WHITE:
@@ -104,7 +104,7 @@ for x in range(4, width - 1, 4):
 			flag = 1
 			x1 = x
 			y1 = y
-		elif color <> BLUE and flag == 1:
+		elif color != BLUE and flag == 1:
 			# end of line
 			lineout(y1, x1, y)
 			flag = 0;
@@ -128,7 +128,7 @@ for y in range(4, height - 1, 4):
 			flag = 1
 			x1 = x
 			y1 = y
-		elif color <> BLUE and flag == 1:
+		elif color != BLUE and flag == 1:
 			# end of line
 			lineout(x1, y1, x)
 			flag = 0;
@@ -203,16 +203,16 @@ for x in range(4, width - 1, 4):
 			objid = objectid(x, y)
 			if objid == SPIDER or objid == FIREBALL or objid == GHOST or objid == SKULL:
 				x1 = x
-				while (pix[x1, y] <> BLUE and pix[x1, y] <> YELLOW):
+				while (pix[x1, y] != BLUE and pix[x1, y] != YELLOW):
 					x1 -= 1
 				x2 = x
-				while (pix[x2, y] <> BLUE and pix[x2, y] <> YELLOW):
+				while (pix[x2, y] != BLUE and pix[x2, y] != YELLOW):
 					x2 += 1
 				y1 = y
-				while (pix[x, y1] <> BLUE and pix[x, y1] <> YELLOW):
+				while (pix[x, y1] != BLUE and pix[x, y1] != YELLOW):
 					y1 -= 1
 				y2 = y
-				while (pix[x, y2] <> BLUE and pix[x, y2] <> YELLOW):
+				while (pix[x, y2] != BLUE and pix[x, y2] != YELLOW):
 					y2 += 1
 				if objid == SPIDER:
 					r += ' fcb ' + coord(x1) + ',' + coord(x2) + ',' + coord(y1) + ',' + coord(y2) + ',$00\n'
@@ -257,7 +257,7 @@ for x in range(4, width - 1, 4):
 				r = r + ' fdb $' + format(x, '04x') + ',$' + format(y, '04x') + '\n'
 				r = r + ' fcb '
 				for j in range(len(xvalues)):
-					if i <> j:
+					if i != j:
 						r = r + coord(xvalues[j]) + ',' + coord(yvalues[j]) + ','
 				r = r[:-1] + '\n'
 				i += 1
