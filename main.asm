@@ -42,19 +42,19 @@ portaloff rmb 1		; nonzero means portals are currently disabled
 V03	rmb 1		; attract mode flag
 
 * Used by music routine
-V05	rmb 2
-V07	rmb 2
-V09	rmb 2
-V0B	rmb 2
-V0D	rmb 2
-V0F	rmb 2
-V11	rmb 2
-V13	rmb 2
-V15	rmb 1
+V05	rmb 2 ; note 1 value
+V07	rmb 2 ; note 2 value
+V09	rmb 2 ; note 3 value
+V0B	rmb 2 ; note 4 value
+V0D	rmb 2 ; note 1 pitch delta
+V0F	rmb 2 ; note 2 pitch delta
+V11	rmb 2 ; note 3 pitch delta
+V13	rmb 2 ; note 4 pitch delta
+V15	rmb 1 ; note duration
 
-V18	rmb 1 ; is crown active?
-V19	rmb 1 ; is crystal ball active?
-V1A	rmb 1
+V18	rmb 1 ; crown active timer ($FF, counts down)
+V19	rmb 1 ; crystal ball active timer ($FF, counts down)
+V1A	rmb 1 ; player walk animation index
 V4F	rmb 1 ; score digit value
 V50	rmb 2 ; bat x position
 V52	rmb 2 ; bat y position
@@ -71,29 +71,34 @@ curposy	rmb 2 ; current player vertical screen position
 tcoord	rmb 1	; temporary coordinate storage
 renderscr rmb 2	; current render screen location
 endclear rmb 2	; lowest address (highest location on screen) to clear
-color	rmb 1
-VBF	rmb 2
-VC1	rmb 2
-VC3	rmb 1
-VC4	rmb 1
-VC5	rmb 1
-VC6	rmb 1
+color	rmb 1	; pset color
+VBF	rmb 2	; attract mode mute flag
+
+* player position
+VC1	rmb 2	; screen pointer (unused)
+VC3	rmb 1	; signed joystick x delta
+VC4	rmb 1	; signed joystick y delta
+VC5	rmb 1   ; last nonzero signed joystick x delta (used for laser and walk animation direction)
+VC6	rmb 1   ; last nonzero signed joystick y delta (used for laser direction)
+
+* line drawing
 VC7	rmb 1
 VC8	rmb 1
 VC9	rmb 1
 VCA	rmb 1
 VCB	rmb 2
 VCD	rmb 2
-VCF	rmb 1
-VD0	rmb 1
-VD1	rmb 1 ; "walk through walls" flag
+VCF	rmb 1	; laser y position
+VD0	rmb 1	; laser x position
+
+VD1	rmb 1 ; fire button timer (0: not depressed, >0: depressed, counts up to FF while still depressed)
 scorep1	rmb 3 ; player one's score
 dead	rmb 1 ; player dead flag
 VD6	rmb 1 ; zero suppress flag
 VD7	rmb 1 ; laser sound value
 VD8	rmb 1 ; render location Y
 VD9	rmb 1 ; render location X
-VDA	rmb 1	; treasure count
+VDA	rmb 1 ; treasure count
 collision rmb 1 ; collision detection flag
 VDC	rmb 1 ; number of treasures remaining
 
@@ -109,7 +114,7 @@ plr1state	rmb 6 ; player two game state (6 bytes)
 plr2state	rmb 6 ; player one game state (6 bytes)
 scorep2		rmb 3 ; player two's score
 scoreptr	rmb 2 ; pointer to current player's score
-texttty		rmb 1 ; whether the "beeping tty" effect is enabled for text
+texttty		rmb 1 ; whether the "tty" effect is enabled for text
 objlistptr	rmb 2 ; pointer to current player's treasure list
 curplayer	rmb 1 ; current player number (oddly, 2 = player 1, 1 = player 2)
 VF9	rmb 2 ; bat sprite (or zero if bat inactive)
@@ -516,13 +521,10 @@ authmess fcb 13
 	fcc 'BY RICK ADAMS '
 
 ;fest1 fcb 10
-	;fcc "WELCOME TO"
-
-;cocot  fcb 16
-;	fcc "COCOTALK EDITION"
+;	fcc "WELCOME TO"
 
 ;fest2 fcb 13
-	;fcc "COCOFEST 2019"
+;	fcc "COCOFEST 2023"
 
 ;licmess fcb 11
 ;	fcc 'LICENSED TO '
@@ -696,7 +698,7 @@ LCF50	nop			; flag for valid warm start routine
 	* Default to composite unless it's a Coco3
 	lda #$f8
 
-	* "You got your Coco3 yet?"
+	* "Hey, you got your CoCo 3 yet?"
 	ldx $FFFE
 	cmpx #$8C1B
 	bne notcoco3
@@ -832,17 +834,17 @@ LCFF1	lbsr showmess		; show the "TEMPLE OF ROM" message
 	;lda #20		; scroll for 20 steps
 	;lbsr scrollmaze	; do the scrolling
 
-	;leau fest1+1,pcr	; "Welcome to"
-	;lbsr showmess		; show it
-	;beq LD05E		; brif button pressed
-	;lda #20		; scroll for 20 steps
-	;lbsr scrollmaze	; do the scrolling
+;	leau fest1+1,pcr	; "Welcome to"
+;	lbsr showmess		; show it
+;	beq LD05E		; brif button pressed
+;	lda #20			; scroll for 20 steps
+;	lbsr scrollmaze		; do the scrolling
 
-	;leau fest2+1,pcr	; "CocoFEST 2019"
-	;lbsr showmess		; show it
-	;beq LD05E		; brif button pressed
-	;lbsr scrolllong	; do a long scroll
-	;bne LD05E		; brif button pressed
+;	leau fest2+1,pcr	; "CocoFEST 20XX"
+;	lbsr showmess		; show it
+;	beq LD05E		; brif button pressed
+;	lbsr scrolllong		; do a long scroll
+;	bne LD05E		; brif button pressed
 
 	;leau licmess+1,pcr	; point to licensing message
 	;lbsr showmess		; show it
@@ -872,7 +874,7 @@ LD05E	lbsr setstartpos	; set default start position
 	lbsr drawmazeboth	; draw maze on both screens
 	clr texttty		; enable the "tty" effect
 	lda #$ff
-	sta VD1			; prevent laser firing during attract mode?
+	sta VD1			; disable laser
 	sta V03			; set attract mode flag
 	lbsr LD144
 	lbsr LD1AC
@@ -954,7 +956,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1			; clear "walk through walls" flag
+	clr VD1			; clear fire button timer
 	ldu #plr1monsters	; point to player one's monster locations
 	stu monsterptr		; save as monster location pointer
 	ldu #scorep1		; point to player one's score
@@ -1002,7 +1004,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	clr portaloff		; mark all portals as active
 	clr V18			; crown inactive
 	clr V19			; crystal ball inactive
-	clr VD1			; clear "walk through walls" flag
+	clr VD1			; clear fire button timer
 	ldu #plr2monsters	; point to player two's monster locations
 	stu monsterptr		; set as monster location pointer
 	ldu #scorep2		; point to player two's score
@@ -1060,14 +1062,14 @@ LD1BE	lbsr swaprender		; switch screens
 	lbra LD375		; animate running man and return
 
 * ADJUST PLAYER POSITION
-* VC1 VC3 VC4 VC5
 move	;jsr SNDOFF		; turn off sound
 	jsr GETJOY		; read joysticks
 	ldb curplayer		; get current player number
 	asrb			; set to 0 for player 2, 2 for player 1
 	lslb
 	ldu #POTVAL		; point to joystick values
-	leau b,u		; point to the correct axes for the active placer
+	leau b,u		; point to the correct axes for the active player
+
 	lda curposx		; get current horizontal position
 	sta tcoord		; save it for later
 	ldb ,u			; read vertical axis
@@ -1086,11 +1088,12 @@ move	;jsr SNDOFF		; turn off sound
 	beq LD22D		; brif not
 	lda tcoord		; get saved position
 	sta curposx		; restore it
+
 LD22D	lda curposy		; read the current vertical position
 	sta tcoord		; save it for later
 	ldb 1,u			; read horizontal axis
 	subb #$20		; subtract midpoint from vertical position
-	stb VC4			; save reading
+	stb VC4			; save adjusted position
 	sex			; sign extend
 	lslb			; shift left three bits as for horizontal position
 	rola
@@ -1104,8 +1107,9 @@ LD22D	lda curposy		; read the current vertical position
 	beq LD24B		; brif not
 	lda tcoord		; get back saved position
 	sta curposy		; restore it
-LD24B	stx VC1			; save screen pointer calculated in checkcollision
-	ldd VC3
+
+LD24B	stx VC1			; save screen pointer calculated in checkcollision (unused)
+	ldd VC3			; are joystick x delta and y delta both zero?
 	beq LD253
 	std VC5
 LD253	rts
@@ -1205,9 +1209,9 @@ checkcollision lda curposy	; get current vertical position
 	bne LD30F		; brif so
 	bitb $41,x		; do we collide at the next byte two rows down?
 LD30F	pshs cc			; save collision state
-	lda VD1			; can walk through walls?
+	lda VD1			; is fire button timer FF?
 	inca
-	bne LD31B		; no
+	bne LD31B		; if it is, allow walking through walls (easter egg)
 	* walk through walls
 	orcc #4			; set Z (no collision)
 	leas 1,s		; clean stack
@@ -1296,12 +1300,12 @@ LD3A3	puls cc
 	bvc LD3AE
 	tst V19
 	bne LD3B8
-	leau $10,u
+	leau $10,u		; advance to next player walk sprite
 LD3AE	lda curposy
 	suba #2
 	ldb curposx
 	decb
-	lbsr drawsprite
+	lbsr drawsprite		; draw player sprite
 LD3B8	rts
 
 LD3B9	lda VD7			; tikkatikka sound active?
@@ -1354,14 +1358,19 @@ LD3DB	pshu d,x,y,dp		; 7 bytes x 18 = 126 bytes
 * Fire laser if joystick button pressed
 LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	andb curplayer		; mask off button for the correct player
-	lbne LD495		; brif button not pressed
-	tst VD1
-	lbne LD4C7		; advance "walk through walls" timer
-	inc VD1			; start timer
+	lbne LD495		; clear "walk through walls" timer and exit if not pressed
+	tst VD1			; was fire button depressed last time?
+	lbne LD4C7		; if so, laser has already fired, update the fire button timer and bail
+
+	* SHOOT LASER
+	inc VD1			; init fire button timer to 1
 	clr VCF
 	clr VD0
+
 	lda #$aa		; red
 	sta color
+
+	* VCB = vC5 * 8
 	ldb VC5
 	lslb
 	sex
@@ -1370,6 +1379,8 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	lslb
 	rola
 	std VCB
+
+	* VCD = VC6 * 8
 	ldb VC6
 	lslb
 	sex
@@ -1378,39 +1389,50 @@ LD40B	ldb PIA0.DA		; read row data from keyboard (gets joystick buttons)
 	lslb
 	rola
 	std VCD
+
 LD438	clra
 	pshs a
+
 	ldd VCB
 	lbsr LD4CF
 	bne LD444
 	inc ,s
 LD444	std VCB
+
 	ldd VCD
 	lbsr LD4CF
 	bne LD44F
 	inc ,s
 LD44F	std VCD
+
 	lda ,s+
 	beq LD438
+
 	ldd VCB
 	asra
 	rorb
 	std VCB
+
 	ldd VCD
 	asra
 	rorb
 	std VCD
+
 	ldb curposx
 	incb
 	stb VC7
+
 	ldb curposy
 	decb
 	stb VC9
+
 	clrb
 	stb VC8
 	stb VCA
+
 	lda #$f0	; enable tikkatikkatikka sound
 	sta VD7
+
 	lbsr LEDwht	; turn on the Boomerang LED
 
 LD474	lda VC9
@@ -1433,7 +1455,7 @@ LD487	ldd VCB
 	std VC9
 	bra LD474
 
-LD495	clr VD1		; reset "walk through walls" timer
+LD495	clr VD1		; reset fire button timer
 LD497	rts
 
 LD498	lda VC9
@@ -1458,7 +1480,7 @@ LD498	lda VC9
 	subb #3
 LD4C4	lbra LD54E 	; queue an explosion
 
-* Advance "walk through walls" timer
+* Advance fire button timer (counts how many times we've found it depressed)
 LD4C7	lda VD1
 	inca		; count up
 	beq LD497	; but not if it's $ff
@@ -1469,11 +1491,11 @@ LD4C7	lda VD1
 LD4CF	tsta		; if positive,
 	blt LD4DC
 	cmpd #$100
-	bge LD4E7	;	and less than $100,
-	lslb
+	bge LD4E7
+	lslb		;	and less than $100
 	rola		;       	D = 2 * D
-	bra LD4E4	; if zero or negative,
-LD4DC	cmpd #$ff00	
+	bra LD4E4	; 		and clear carry
+LD4DC	cmpd #$ff00	; if zero or negative,
 	ble LD4E7	; 	and greater than $FF00,
 	lslb
 	rola		;		D = 2 * D
@@ -1927,6 +1949,7 @@ LD959	cmpb ,y+		; are we at the right index point in the font?
 	bra LD959		; go check next index location
 LD961	ldd 3,s			; get render coordinates
 	lbsr drawglyph		; render character to screen
+
 	lbsr dupheader		; copy rendered text to second screen
 	lbsr checkcssel		; check color set selection keys
 	lbsr dobleep		; do the bleep if required
@@ -2523,52 +2546,55 @@ LDDFB	pshs b			; save X coordinate
 	stb ,x			; set new pixel data on screen
 	rts
 
-drawglyph	pshs b,a	; save render coordinates
-	pshs b			; save original X coordinate for later
-	lda #5			; render 5 bits
-	pshs a			; save counter
-	ldd 2,u			; save font data bytes on stack (4 of them)
+* U: points to font data
+* B: X coordinate
+* A: Y coordinate
+drawglyph pshs b,a	; save render coordinates
+	pshs b		; save original X coordinate for later
+	lda #5		; render 5 bits
+	pshs a		; save counter
+	ldd 2,u		; save font data bytes on stack (4 of them)
 	pshs b,a
 	ldd ,u
 	pshs b,a
-LDE28	lda ,s			; check if remaining font data is all 0s
+LDE28	lda ,s		; check if remaining font data is all 0s
 	ora 1,s
 	ora 2,s
 	ora 3,s
-	beq LDE55		; brif all 0s - no point continuing more (and it's how we exit anyway)
-	clra			; clear out temporary (could skip this, the rola, and tsta below))
-	lsl 3,s			; fetch bit from font data
+	beq LDE55	; brif all 0s - no point continuing more (and it's how we exit anyway)
+	clra		; clear out temporary (could skip this, the rola, and tsta below))
+	lsl 3,s		; fetch bit from font data
 	rol 2,s
 	rol 1,s
 	rol ,s
-	rola			; shift pixel bit into A
-	tsta			; do we have a bit?
-	beq LDE43		; brif not (could be bcc and lose the rola/tsta above)
-	ldd 6,s			; get render coordinates
-	bsr LDDFB		; render pixel
-LDE43	inc 7,s			; bump render X coordinate
-	dec 4,s			; done all 5 bits?
-	bne LDE28		; brif not
-	inc 6,s			; bump Y coordinate
-	lda 5,s			; restore original X coordinate
+	rola		; shift pixel bit into A
+	tsta		; do we have a bit?
+	beq LDE43	; brif not (could be bcc and lose the rola/tsta above)
+	ldd 6,s		; get render coordinates
+	bsr LDDFB	; render pixel
+LDE43	inc 7,s		; bump render X coordinate
+	dec 4,s		; done all 5 bits?
+	bne LDE28	; brif not
+	inc 6,s		; bump Y coordinate
+	lda 5,s		; restore original X coordinate
 	sta 7,s
-	lda #5			; reset render counter
+	lda #5		; reset render counter
 	sta 4,s
-	bra LDE28		; go render another row of pixels
-LDE55	leas 8,s		; clean up temporaries
+	bra LDE28	; go render another row of pixels
+LDE55	leas 8,s	; clean up temporaries
 	rts
 
-LDE58	lda curposy		; get current vertical coordinate on screen
-	ldb curposx		; get current horizontal coordinate on screen
-	deca			; calculate one pixel up and left (bottom right of comparison box)
+LDE58	lda curposy	; get current vertical coordinate on screen
+	ldb curposx	; get current horizontal coordinate on screen
+	deca		; calculate one pixel up and left (bottom right of comparison box)
 	decb
-	sta hitx2			; save the calculated coordinates
+	sta hitx2	; save the calculated coordinates
 	stb hity2
-	suba #2			; calculate two more pixels up and left (top left of comparison box)
+	suba #2		; calculate 2 more pixels up and left (top left of comparison box)
 	subb #2
-	sta hitx1			; save those calculated coordinates
+	sta hitx1	; save those calculated coordinates
 	stb hity1
-	tst portaloff		; are portals active?
+	tst portaloff	; are portals active?
 	beq LDE70		; brif so - don't adjust counter
 	inc portaloff		; bump portal disable count (will eventually wrap to 0 and re-enable portals)
 
@@ -2768,7 +2794,7 @@ LEDoff		; LED off
  sta $FFEF
  puls a,pc
 
-LEDred		; LED off
+LEDred		; LED red
  pshs a
  clr $FFEF
  lda #LEDRED
