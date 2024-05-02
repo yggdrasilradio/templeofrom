@@ -64,12 +64,12 @@ V5F	rmb 2 ; target coord y
 V68	rmb 2 ; object coord x
 V8D	rmb 1 ; object coord y
 randseed rmb 2 ; the "random seed"
-mazeoffx rmb 2 ; horizontal offset in maze of top left of screen
-mazeoffy rmb 2 ; vertical offset in maze of top left of screen
+homex	rmb 2 ; horizontal offset in maze of top left of screen
+homey	rmb 2 ; vertical offset in maze of top left of screen
 curposx	rmb 2 ; current player horizontal screen position
 curposy	rmb 2 ; current player vertical screen position
 tcoord	rmb 1	; temporary coordinate storage
-renderscr rmb 2	; current render screen location
+scrn	rmb 2	; current render screen location
 endclear rmb 2	; lowest address (highest location on screen) to clear
 color	rmb 1	; pset color
 VBF	rmb 2	; attract mode mute flag
@@ -220,11 +220,11 @@ START	orcc #$50		; make sure interrupts are disabled
 	include joystick.asm    ; fetch joystick handling routines
 
 ; Render the vertical lines of the map
-drawvert leau LC34A,pcr		; point to short circuit offset table for vertical lines
-	ldd mazeoffx		; fetch screen display offset for maze
-	bge LC013		; brif screen X offset is positive
+vlines	leau vvect,pcr		; point to short circuit offset table for vertical lines
+	ldd homex		; fetch screen display offset for maze
+	bge sfx			; brif screen X offset is positive
 	ldd #0			; minimize to 0
-LC013	lslb			; shift upper 2 bits of position into A
+sfx	lslb			; shift upper 2 bits of position into A
 	rola
 	lslb
 	rola
@@ -239,7 +239,7 @@ LC01C	clra			; zero extend next read
 	rola
 	lslb
 	rola
-	subd mazeoffx		; compare to maze offset
+	subd homex		; compare to maze offset
 	blt LC06B		; brif off the left of the screen
 	cmpd #$7f		; are we off the right side of the screen?
 	bgt LC06F		; brif so - don't render anything
@@ -250,7 +250,7 @@ LC01C	clra			; zero extend next read
 	rola
 	lslb
 	rola
-	subd mazeoffy		; compare to screen offset (vertical)
+	subd homey		; compare to screen offset (vertical)
 	cmpd #8			; is it in the header or off the screen?
 	bge LC043		; brif not
 	ldb #8			; force to start at top of visible area
@@ -264,7 +264,7 @@ LC04B	pshs b			; save first Y coordinate
 	rola
 	lslb
 	rola
-	subd mazeoffy		; compare to screen offset (vertical)
+	subd homey		; compare to screen offset (vertical)
 	bge LC059		; brif below top of screen
 	clrb			; normalize into screen
 LC059	cmpd #$5f		; are we off the bottom of the screen
@@ -287,7 +287,7 @@ vline	pshs a			; save top coordinate
 	pshs b			; save bottom coordinate
 	tfr x,d			; stuff the horizontal coordinate into an accumulator
 	andb #3			; figure out which pixel in the byte we're at
-	leay LC09A,pcr		; point to pixel bit masks
+	leay masks,pcr		; point to pixel bit masks
 	lda b,y			; get the proper pixel bit mask
 	ldb ,s+			; get bottom coordinate
 	subb ,s			; subtract out top coordinate (number of pixels to do)
@@ -300,7 +300,7 @@ vline	pshs a			; save top coordinate
 	rorb
 	lsra
 	rorb
-	addd renderscr		; add to base screen address
+	addd scrn		; add to base screen address
 	exg d,x			; put into pointer and get back pixel mask and counter
 
 LC091	sta ,x			; set pixel for line
@@ -311,14 +311,14 @@ LC091	sta ,x			; set pixel for line
 
 	rts
 
-LC09A	fcb $40,$10,$04,$01	; pixel masks for maze walls (color #1)
+masks	fcb $40,$10,$04,$01	; pixel masks for maze walls (color #1)
 
 ; Render the horizontal lines of the map
-drawhoriz leau LC36A,pcr	; point to short circuit offsets for horizontal drawing
-	ldd mazeoffy		; get vertical offset of screen
-	bge LC0A9		; brif valid coordinate
+hlines	leau hvect,pcr		; point to short circuit offsets for horizontal drawing
+	ldd homey		; get vertical offset of screen
+	bge sfy			; brif valid coordinate
 	ldd #0			; minimize to 0
-LC0A9	lslb			; get upper 4 bits of offset into A
+sfy	lslb			; get upper 4 bits of offset into A
 	rola
 	lslb
 	rola
@@ -333,7 +333,7 @@ LC0B2	clra			; zero extend for next read
 	rola
 	lslb
 	rola
-	subd mazeoffy		; get offset relative to screen position
+	subd homey		; get offset relative to screen position
 	cmpd #8			; are we above the screen or in the header?
 	blt LC100		; brif so
 	cmpd #$5f		; are we below the bottom of the screen?
@@ -345,7 +345,7 @@ LC0B2	clra			; zero extend for next read
 	rola
 	lslb
 	rola
-	subd mazeoffx		; offset relative to the screen position
+	subd homex		; offset relative to the screen position
 	bge LC0D8		; brif not off the left side
 	clrb			; normalize to left side
 LC0D8	cmpd #$7f		; off the right of the screen?
@@ -358,7 +358,7 @@ LC0E0	pshs b			; save left coordinate
 	rola
 	lslb
 	rola
-	subd mazeoffx		; offset according to the screen position
+	subd homex		; offset according to the screen position
 	bge LC0EE		; brif not off left side of screen
 	clrb			; normalize to left side of screen
 LC0EE	cmpd #$7f		; are we off the right side of the screen?
@@ -388,11 +388,11 @@ hline	pshs a			; save left coordinate
 	rorb
 	lsra
 	rorb
-	addd renderscr		; add screen base
+	addd scrn		; add screen base
 	exg d,x			; save pointer and get back coordinates
 	subb ,s+		; calculate number of pixels
 	incb			; add one (compensate for decb below)
-	leay LC09A,pcr		; point to pixel masks
+	leay masks,pcr		; point to pixel masks
 	anda #3			; get pixel number in byte
 	lda a,y			; get pixel mask
 	sta temp
@@ -425,14 +425,14 @@ LC148	rts
 
 ; explosion sprites
 
-explosion
-	fcb explosion1-*
-	fcb explosion2-*
-	fcb explosion3-*
-	fcb explosion4-*
+shot
+	fcb shot1-*
+	fcb shot2-*
+	fcb shot3-*
+	fcb shot4-*
 	fcb $00 ; end of table marker
 
-explosion1
+shot1
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 	fcb $03,$00 ; ...W....
@@ -442,7 +442,7 @@ explosion1
 	fcb $00,$00 ; ........
 	fcb $00,$00 ; ........
 
-explosion2
+shot2
 	fcb $c0,$0c ; W.....W.
 	fcb $30,$30 ; .W...W..
 	fcb $0e,$c0 ; ..WRW...
@@ -452,7 +452,7 @@ explosion2
 	fcb $c0,$0c ; W.....W.
 	fcb $00,$00 ; ........
 
-explosion3
+shot3
 	fcb $00,$20 ; .....R..
 	fcb $20,$c0 ; .R..W...
 	fcb $08,$80 ; ..R.R...
@@ -462,7 +462,7 @@ explosion3
 	fcb $80,$30 ; R....W..
 	fcb $00,$00 ; ........
 
-explosion4
+shot4
 	fcb $00,$00 ; ........
 	fcb $0c,$00 ; ..W.....
 	fcb $00,$20 ; .....R..
@@ -496,28 +496,28 @@ digits	fcb $3c,$00,$c3,$00,$c3,$00,$c3,$00	; 0
 	fcb $3c,$00,$c3,$00,$3f,$00,$03,$00	; 9
 	fcb $fc,$00,$00,$00,$00,$00,$00,$00
 
-plr1mess fcb 10
+playr1 fcb 10
 	fcc 'PLAYER ONE'
 
-plr2mess fcb 10
+playr2 fcb 10
 	fcc 'PLAYER TWO'
 
-ToRmess	fcb 16
+templ	fcb 16
 	fcc 'TEMPLE OF ROM !!'
 
-gameovermess fcb 9
+gamovr fcb 9
 	fcc 'GAME OVER'
 
-oneplrmess fcb 10
+oneplr fcb 10
 	fcc 'ONE PLAYER'
 
-twoplrmess fcb 11
+twoplr fcb 11
 	fcc 'TWO PLAYERS'
 
-copyrmess fcb 14
+copyr fcb 14
 	fcc 'COPYRIGHT 2020 '
 
-authmess fcb 13
+rick fcb 13
 	fcc 'BY RICK ADAMS '
 
 ;fest1 fcb 10
@@ -740,7 +740,7 @@ initvsync
 no@	std randseed
 
 	ldd #SCREEN2		; set render screen to screen #2
-	std renderscr
+	std scrn
 	ldd #SCREEN1		; set bottom of screen to clear to start of screen #1
 	std endclear
 	lbsr LD3B9		; clear both screens
@@ -772,9 +772,9 @@ LCF94	lbsr LD531
 	lbsr setstartpos	; set default attract mode scrolling start
 	pshs d
 	ldd #MINX+((MAXX-MINX)/2)-(128/2)
-	std mazeoffx
+	std homex
 	ldd #MINY+((MAXY-MINY)/2)-(96/2)
-	std mazeoffy
+	std homey
 	puls d
 
 	clr VD7			; silence tikkatikka sound
@@ -784,7 +784,7 @@ LCF94	lbsr LD531
 	clr texttty		; enable "tty" effect
 LCFBD 	tst numplayers		; did we have a game running?
 	beq LCFDF		; brif not
-	leau gameovermess+1,pcr	; point to game over message
+	leau gamovr+1,pcr	; point to game over message
 	lbsr showmess		; show it
 	lbeq LD05E		; brif button pressed
 	lda #20			; 20 scroll iterations
@@ -794,7 +794,7 @@ LCFBD 	tst numplayers		; did we have a game running?
 	lda #$ff		; do a really long maze scroll (255 iterations)
 	lbsr scrollmaze		; actually do the scrolling
 	bne LD05E		; brif button pressed
-LCFDF	leau ToRmess+1,pcr	; point to "TEMPLE OF ROM" message
+LCFDF	leau templ+1,pcr	; point to "TEMPLE OF ROM" message
 	lda texttty		; get the current "tty" state
 	sta VBF			; save it for later
 	beq LCFF1		; brif enabled
@@ -816,13 +816,13 @@ LCFF1	lbsr showmess		; show the "TEMPLE OF ROM" message
 	lda #20			; scroll for 20 steps
 	lbsr scrollmaze		; do the scrolling
 
-	leau copyrmess+1,pcr	; point to copyright message
+	leau copyr+1,pcr	; point to copyright message
 	lbsr showmess		; show it
 	beq LD05E		; brif button pressed
 	lda #20			; scroll for 20 steps
 	lbsr scrollmaze		; do the scrolling
 
-	leau authmess+1,pcr	; point to author message
+	leau rick+1,pcr	; point to author message
 	lbsr showmess		; show it
 	beq LD05E		; brif button pressed
 	lbsr scrolllong		; do a long scroll
@@ -890,7 +890,7 @@ LD07D	jsr GETJOY		; read joysticks
 	lda numplayers		; get number of players
 	cmpa #1			; already set to one?
 	beq LD0AC		; brif so
-	leau oneplrmess+1,pcr	; point to one player message
+	leau oneplr+1,pcr	; point to one player message
 	lbsr showmess		; display it
 	lda #1			; set to one player
 	sta numplayers
@@ -898,7 +898,7 @@ LD07D	jsr GETJOY		; read joysticks
 LD09B	lda numplayers		; get number of players
 	cmpa #2			; set for two?
 	beq LD0AC		; brif so
-	leau twoplrmess+1,pcr	; point to two player message
+	leau twoplr+1,pcr	; point to two player message
 	lbsr showmess		; display it
 	lda #2			; set to two players
 	sta numplayers
@@ -935,9 +935,9 @@ setstartpos pshs a,b		; save registers
 	sta curposx		; set horizontal position
 	stb curposy		; set vertical position
 	ldd #STARTX		; set player position (X) entry point
-	std mazeoffx
+	std homex
 	ldd #STARTY		; set player position (Y) entry point
-	std mazeoffy
+	std homey
 	puls a,b,pc		; restore registers and return
 
 ; Game loop for player one
@@ -946,9 +946,9 @@ LD0EE	ldu #plr1state		; point to player one state
 	sta curposx		; save horizontal screen position
 	stb curposy		; save vertical screen position
 	ldd ,u++		; fetch saved maze offset (X)
-	std mazeoffx		; activate it
+	std homex		; activate it
 	ldd ,u			; fetch saved maze offset (Y)
-	std mazeoffy		; activate it
+	std homey		; activate it
 	lda #2			; switch active player to player one
 	sta curplayer
 	lbsr LD9EA
@@ -963,7 +963,7 @@ LD0EE	ldu #plr1state		; point to player one state
 	stu scoreptr		; set as current score pointer
 	ldu #plr1objlist	; point to player one's treasure list
 	stu objlistptr		; set as current treasure list pointer
-	leau plr1mess+1,pcr	; point to player one header message
+	leau playr1+1,pcr	; point to player one header message
 	lbsr showmess		; show it
 	clra			; stop maze scroll
 	clrb
@@ -982,9 +982,9 @@ LD144	ldu #plr1state		; point to player one's state data
 	lda curposx		; fetch current horizontal screen position
 	ldb curposy		; fetch current vertical screen position
 	std ,u++		; save in state
-	ldd mazeoffx		; fetch current maze offset (X)
+	ldd homex		; fetch current maze offset (X)
 	std ,u++		; save in state
-	ldd mazeoffy		; fetch current maze offset (Y)
+	ldd homey		; fetch current maze offset (Y)
 	std ,U			; save in state
 	rts
 
@@ -994,9 +994,9 @@ LD156	ldu #plr2state		; point to player two's state data
 	sta curposx		; save horizontal screen position
 	stb curposy		; save vertical screen position
 	ldd ,u++		; fetch saved maze offset (X)
-	std mazeoffx		; activate it
+	std homex		; activate it
 	ldd ,u			; fetch saved maze offset (Y)
-	std mazeoffy		; activate it
+	std homey		; activate it
 	lda #1			; set player two active
 	sta curplayer
 	lbsr LD9EA
@@ -1011,7 +1011,7 @@ LD156	ldu #plr2state		; point to player two's state data
 	stu scoreptr		; set as current score pointer
 	ldu #plr2objlist	; point to the treasure list for player two
 	stu objlistptr		; save as current treasure list
-	leau plr2mess+1,pcr	; point to player two header message
+	leau playr2+1,pcr	; point to player two header message
 	lbsr showmess		; set heading
 	clra			; stop maze scroll
 	clrb
@@ -1029,9 +1029,9 @@ LD1AC	ldu #plr2state		; point to player two state
 	lda curposx		; get current horizontal screen position
 	ldb curposy		; get current vertical screen position
 	std ,u++		; save in state
-	ldd mazeoffx		; get current maze offset (X)
+	ldd homex		; get current maze offset (X)
 	std ,u++		; save in state
-	ldd mazeoffy		; get current maze offset (Y)
+	ldd homey		; get current maze offset (Y)
 	std ,u			; save in state
 	rts
 
@@ -1043,8 +1043,8 @@ LD1BE	lbsr swaprender		; switch screens
 	lbsr checkcssel		; check for color set selection keys
 	lbsr LDF96		; age crystal ball and crown
 	lbsr clearrender	; clear workspace
-	lbsr drawvert		; draw walls
-	lbsr drawhoriz
+	lbsr vlines		; draw walls
+	lbsr hlines
 	bsr move		; move player up to 2 pixels
 	bsr move
 	lbsr LD5C4		; render queued explosions
@@ -1118,7 +1118,7 @@ LD253	rts
 * Adjust all the coordinates in the explosion queue to compensate for scrolling
 * Scroll when you get within 16(?) pixels of the edge of the screen
 scroll	lda curposx
-	ldx mazeoffx
+	ldx homex
 	ldy #XQUEUE		; explosion sprite queue
 	cmpa #$0f		; 15
 	bhi LD27A
@@ -1147,9 +1147,9 @@ LD27A	cmpa #$6d		; 109 = 127 - 15 - 3
 	dec 27,y
 	dec 31,y
 	dec curposx
-LD296	stx mazeoffx
+LD296	stx homex
 	lda curposy
-	ldx mazeoffy
+	ldx homey
 	cmpa #$17		; 23 = 15 + 8
 	bhi LD2BA
 * SCROLL SCREEN DOWN (player moving up)
@@ -1177,7 +1177,7 @@ LD2BA	cmpa #$4d		; 77 = 96 - 15 - 4
 	dec 26,y 
 	dec 30,y
 	dec curposy
-LD2D6	stx mazeoffy
+LD2D6	stx homey
 	rts
 
 * COLLISION WITH WALLS
@@ -1191,7 +1191,7 @@ checkcollision lda curposy	; get current vertical position
 	rorb
 	lsra
 	rorb
-	addd renderscr		; add to screen base address
+	addd scrn		; add to screen base address
 	exg d,x			; save address to pointer and get back original values
 	andb #3			; get offset into byte for the pixel
 	lslb			; double the pixel offset
@@ -1319,7 +1319,7 @@ no@
 	sta VD7
 	lbsr LDFD1		; enable sound output from DAC
 
-LD3C5	ldu renderscr		; get start address of render screen
+LD3C5	ldu scrn		; get start address of render screen
 	leau $c00,u		; point to end of screen
 	clra			; clear registers for stack blast below
 	clrb
@@ -1524,7 +1524,7 @@ pset	cmpa #$5f	; is the Y coordinate off bottom of screen?
 	rorb		; * an 8 bit value in A gives the 16 bit result in D
 	lsra		; * Also, the shifts will divide the value in B by 8
 	rorb		; * which gives the correct offset into the screen
-	addd renderscr	; add in screen start address
+	addd scrn	; add in screen start address
 	tfr d,x		; save byte address in a pointer register
 	puls a		; get back X coordinate
 	anda #3		; find offset in byte
@@ -1582,7 +1582,7 @@ LD562	ldd ,u		; find blank slot in 8 slots of 4 bytes each
 	leax -1,x
 	bne LD562
 	bra LD57C
-LD56E	leax explosion,pcr	; queue explosion, starting with first sprite
+LD56E	leax shot,pcr	; queue explosion, starting with first sprite
 	stx ,u++
 	tfr y,d
 	suba #4
@@ -1682,10 +1682,10 @@ addscore	pshs u		; save register
 	sta ,u			; save new msb
 	puls pc,u		; restore registers and return
 
-showscore ldd renderscr		; get pointer to current render screen
+showscore ldd scrn		; get pointer to current render screen
 	pshs b,a		; save it for later
 	ldd #SCREEN1		; set to screen one
-	std renderscr
+	std scrn
 	lbsr clrheader		; clear the header
 	lda scorep1		; get high 2 digits of player one's score
 	ldb #3			; starting X coordinate for score
@@ -1712,7 +1712,7 @@ showscore ldd renderscr		; get pointer to current render screen
 	bsr LD65D		; display digits
 LD655	lbsr dupheader		; duplicate the header to screen two
 	puls b,a		; get back current render screen
-	std renderscr		; restore it to active
+	std scrn		; restore it to active
 	rts
 
 LD65D	pshs b,a		; save registers (coordinate and score digits)
@@ -1751,7 +1751,7 @@ LD69F	puls b,a		; get back X coordinate and digit
 	addb #5			; move to next digit position (X coordinate)
 	rts
 
-clearrender	ldd renderscr	; get pointer to start of current render screen
+clearrender	ldd scrn	; get pointer to start of current render screen
 	addd #$100		; pointer to below the screen header
 	std endclear		; save top of space to clear
 	lbra LD3B9		; go clear the screen
@@ -1808,7 +1808,7 @@ LD841	ldb ,u		; treasure x
 	rola
 	lslb
 	rola
-	subd mazeoffx
+	subd homex
 	cmpd #$fffa
 	blt LD8BF	; offscreen
 	cmpd #$7f
@@ -1820,7 +1820,7 @@ LD841	ldb ,u		; treasure x
 	rola
 	lslb
 	rola
-	subd mazeoffy
+	subd homey
 	cmpd #2
 	blt LD8BF	; offscreen
 	cmpd #$5f
@@ -1887,26 +1887,26 @@ LD8E4	rts
 
 swaprender
 	lbsr WaitVSYNC		; wait for VSYNC
-	ldd renderscr		; get start address of current render screen
+	ldd scrn		; get start address of current render screen
 	cmpd #SCREEN1		; screen number 1?
 	bne LD8FD		; brif not
 	sta SAM+9		; set SAM to display screen #1
 	sta SAM+12
 	ldd #SCREEN2		; set render address to screen #2
-	std renderscr
+	std scrn
 	rts
 LD8FD	sta SAM+8		; set SAM to display screen #2
 	sta SAM+13
 	ldd #SCREEN1		; set render address to screen #1
-	std renderscr
+	std scrn
 LD90B	rts
 
 ; Render a string at the top of both graphics screens. The string will be centered.
 ; If texttty is zero, a delay will be introduced between characters and a bleep will sound
-showmess ldd renderscr		; get current render screen
+showmess ldd scrn		; get current render screen
 	pshs b,a		; save it
 	ldd #SCREEN1		; point to start of screen #1
-	std renderscr		; set it as the render screen
+	std scrn		; set it as the render screen
 	lbsr clrheader		; clear out top 8 pixel rows of screen #1
 	lda -1,u		; get length of string
 	ldb #6			; six pixels per character cell
@@ -1962,14 +1962,14 @@ LD961	ldd 3,s			; get render coordinates
 	bra LD92C		; go render another character
 LD97E	leas 5,s		; clean up temporaries
 	puls b,a		; get back render screen pointer
-	std renderscr		; restore render pointer
+	std scrn		; restore render pointer
 	lbsr dupheader		; copy top 8 rows to second screen
 	andcc #$fb		; clear Z (no joystick button pressed)
 	rts
 
 LD98A	leas 5,s		; clear temporaries
 	puls b,a		; restore render screen pointer
-	std renderscr
+	std scrn
 	lbsr dupheader		; copy top 8 rows to the second screen
 	orcc #4			; set Z for joystick button pressed
 	rts
@@ -1981,24 +1981,24 @@ LD99A	dec ,s			; decrement iteration count
 	lbsr checkcssel		; check color set selection keys
 	lbsr swaprender		; swap screens
 	lbsr clearrender	; get a clear canvas
-	lbsr drawvert		; draw lines
-	lbsr drawhoriz
+	lbsr vlines		; draw lines
+	lbsr hlines
 
 * ATTRACT MODE SCROLL
-	ldd mazeoffx		; get X offset for screen
+	ldd homex		; get X offset for screen
 	addd scrollstep		; add in step
-	std mazeoffx		; save new screen offset
-	ldd mazeoffy		; get Y offset for screen
+	std homex		; save new screen offset
+	ldd homey		; get Y offset for screen
 	addd scrollstep		; add in step
-	std mazeoffy		; save new screen offset
+	std homey		; save new screen offset
 
-	ldd mazeoffx
+	ldd homex
 	cmpd #MAXX-128		; did we pass the right edge?
 	bhs reverse		; brif not / continue scrolling
 	cmpd #MINX		; did we pass the left edge?
 	blo reverse		; brif not / continue scrolling
 
-	ldd mazeoffy
+	ldd homey
 	cmpd #MAXY-96		; did we pass the bottom edge?
 	bhs reverse		; brif not / continue scrolling
 	cmpd #MINY-4		; did we pass the top edge?
@@ -2051,14 +2051,14 @@ LDA08	leau LDACF,pcr		; first bat sprite
 	beq LDA19
 	leau $10,u		; second bat sprite
 LDA19	ldd V52
-	subd mazeoffy
+	subd homey
 	cmpd #2
 	blt LDA92
 	cmpd #$5f
 	bgt LDA92
 	stb VBF
 	ldd V50
-	subd mazeoffx
+	subd homex
 	cmpd #$fffa
 	blt LDA92
 	cmpd #$7f
@@ -2069,13 +2069,13 @@ LDA19	ldd V52
 	tst collision
 	beq LDA92
 	ldd V50
-	subd mazeoffx
+	subd homex
 	subd #4
 	stb hity1
 	addd #8
 	stb hity2
 	ldd V52
-	subd mazeoffy
+	subd homey
 	subd #4
 	stb hitx1
 	addd #8
@@ -2119,10 +2119,10 @@ LDA93	pshs u,b,a
 	leau LDACF,pcr	; bat sprite
 	stu VF9		; activate bat
 	* Place the bat just offscreen at a random corner
-	ldd mazeoffx
+	ldd homex
 	subd #$0a
 	std V50		; bat x position
-	ldd mazeoffy
+	ldd homey
 	subd #$0a
 	std V52		; bat y position
 	lbsr random
@@ -2203,7 +2203,7 @@ LDB37	lda #$ff		; assume player is dead
 	sta dead		; player dead flag
 	ldb curposx
 	clra
-	addd mazeoffx
+	addd homex
 	subd #4
 	cmpd V50		; bat x position
 	beq LDB5E
@@ -2219,7 +2219,7 @@ LDB55	ldd V50
 	std V50			; bat x position
 LDB5E	ldb curposy
 	clra
-	addd mazeoffy
+	addd homey
 	subd #1
 	cmpd V52		; bat y position
 	beq LDB81
@@ -2256,11 +2256,11 @@ LDB96	ldu monsterptr
 	* monster chases player
 	clra
 	ldb curposx
-	addd mazeoffx
+	addd homex
 	std V5D			; target coord x is player x
 	clra
 	ldb curposy
-	addd mazeoffy
+	addd homey
 	std V5F			; target coord y is player y
 
 LDBAF	leau 9,u
@@ -2355,10 +2355,10 @@ LDC28	ldx ,s
 	ldd V8D		; object coord y
 	std 2,x
 	ldd V68		; object coord x
-	subd mazeoffx
+	subd homex
 	std V68		; object coord x
 	ldd V8D		; object coord y
-	subd mazeoffy
+	subd homey
 	std V8D		; object coord y
 
 	* Is this monster onscreen?
@@ -2535,7 +2535,7 @@ LDDFB	pshs b			; save X coordinate
 	rorb			;* on the screen row
 	lsra			;*
 	rorb			;*
-	addd renderscr		; add in screen base address
+	addd scrn		; add in screen base address
 	tfr d,x			; put address in pointer
 	puls a			; get back original 
 	anda #3			; get pixel offset in byte
@@ -2606,14 +2606,14 @@ LDE76	leau PTROWLEN,u		; move to next item
 	lbeq LDF09		; brif end of table
 * IS IT VISIBLE
 	;ldd ,u			; fetch X coordinate (redundant)
-	subd mazeoffx		; subtract maze display offset
+	subd homex		; subtract maze display offset
 	cmpd #$fffa		; is it within 6 pixels of left of screen?
 	blt LDE76		; brif not - move to next item
 	cmpd #$7f		; is it off the right side of the screen?
 	bgt LDE76		; brif so - next item
 	stb VD9			; save X coordinate for rendering
 	ldd 2,u			; fetch Y coordinate
-	subd mazeoffy		; subtract maze display offset
+	subd homey		; subtract maze display offset
 	cmpd #2			; is it within the displayable area (will part be at row 8 or lower?)
 	blt LDE76		; brif not
 	cmpd #$5f		; is it within the visible area (bottom)?
@@ -2664,7 +2664,7 @@ LDEB0	lda VD8			; get Y render coordinate
 	rola
 	subb curposy		; adjust for current location
 	sbca #0			; propagate carry
-	std mazeoffy		; set display offset of maze
+	std homey		; set display offset of maze
 	clra			; zero extend for X coordinate
 	ldb VBF			; retrieve X coordinate
 	lslb			; times 4
@@ -2673,7 +2673,7 @@ LDEB0	lda VD8			; get Y render coordinate
 	rola
 	subb curposx		; adjust for current location
 	sbca #0			; propagate carry
-	std mazeoffx		; save new maze display offset
+	std homex		; save new maze display offset
 	inc portaloff		; disable portals
 	;lbra LDE76		; go render another portal (this feels buggy)
 
@@ -2686,12 +2686,12 @@ LDF09	rts
  ENDC
 
 drawmazeboth lbsr clearrender	; get a clean render area
-	lbsr drawvert		; draw the vertical lines
-	lbsr drawhoriz		; draw the horizontal lines
+	lbsr vlines		; draw the vertical lines
+	lbsr hlines		; draw the horizontal lines
 	lbsr swaprender		; swap screens
 	lbsr clearrender	; get clean render area
-	lbsr drawvert		; draw vertical lines
-	lbsr drawhoriz		; draw horizontal lines
+	lbsr vlines		; draw vertical lines
+	lbsr hlines		; draw horizontal lines
 	lbra swaprender		; swap screens and return
 
 * Did we just collect a special item?

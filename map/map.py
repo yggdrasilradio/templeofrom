@@ -87,12 +87,12 @@ minx = 9000
 maxy = 0
 miny = 9000
 r = '* vertical lines\n'
-r = r + 'vertscr0\n'
+r = r + 'v0\n'
 for x in range(4, width - 1, 4):
 	flag = 0
 	if x % 64 == 0:
 		col = x / 4 + 1
-		r = r +  'vertscr' + str(int(col / 16)) + '\n';
+		r = r +  'v' + str(int(col / 16)) + '\n';
 	for y in range(4, height - 1):
 		color = pix[x, y]
 		if color == BLUE and flag == 0:
@@ -111,12 +111,12 @@ for x in range(4, width - 1, 4):
 r = r + ' fcb 0\n\n'
 
 r = r + '* horizontal lines' + '\n'
-r = r + 'horscr0' + '\n'
+r = r + 'h0' + '\n'
 for y in range(4, height - 1, 4):
 	flag = 0
 	if y % 64 == 0:
 		col = y / 4 + 1
-		r = r +  'horscr' + str(int(col / 16)) + '\n';
+		r = r +  'h' + str(int(col / 16)) + '\n';
 	for x in range(4, width - 1):
 		color = pix[x, y]
 		if color == BLUE and flag == 0:

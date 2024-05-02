@@ -18,43 +18,43 @@
 ; Max area is 1020 x 1020
 
 ; Offsets for rendering vertical lines (can be excluded based on horizontal position)
-LC34A	fdb vertscr0-LC34A
-	fdb vertscr1-LC34A
-	fdb vertscr2-LC34A
-	fdb vertscr3-LC34A
-	fdb vertscr4-LC34A
-	fdb vertscr5-LC34A
-	fdb vertscr6-LC34A
-	fdb vertscr7-LC34A
-	fdb vertscr8-LC34A
-	fdb vertscr9-LC34A
-	fdb vertscr10-LC34A
-	fdb vertscr11-LC34A
-	fdb vertscr12-LC34A
-	fdb vertscr13-LC34A
-	fdb vertscr14-LC34A
-	fdb vertscr15-LC34A
+vvect	fdb v0-vvect
+	fdb v1-vvect
+	fdb v2-vvect
+	fdb v3-vvect
+	fdb v4-vvect
+	fdb v5-vvect
+	fdb v6-vvect
+	fdb v7-vvect
+	fdb v8-vvect
+	fdb v9-vvect
+	fdb v10-vvect
+	fdb v11-vvect
+	fdb v12-vvect
+	fdb v13-vvect
+	fdb v14-vvect
+	fdb v15-vvect
 
 ; Offsets for rendering horizontal lines (can be excluded based on vertical position)
-LC36A	fdb horscr0-LC36A
-	fdb horscr1-LC36A
-	fdb horscr2-LC36A
-	fdb horscr3-LC36A
-	fdb horscr4-LC36A
-	fdb horscr5-LC36A
-	fdb horscr6-LC36A
-	fdb horscr7-LC36A
-	fdb horscr8-LC36A
-	fdb horscr9-LC36A
-	fdb horscr10-LC36A
-	fdb horscr11-LC36A
-	fdb horscr12-LC36A
-	fdb horscr13-LC36A
-	fdb horscr14-LC36A
-	fdb horscr15-LC36A
+hvect	fdb h0-hvect
+	fdb h1-hvect
+	fdb h2-hvect
+	fdb h3-hvect
+	fdb h4-hvect
+	fdb h5-hvect
+	fdb h6-hvect
+	fdb h7-hvect
+	fdb h8-hvect
+	fdb h9-hvect
+	fdb h10-hvect
+	fdb h11-hvect
+	fdb h12-hvect
+	fdb h13-hvect
+	fdb h14-hvect
+	fdb h15-hvect
 
 ***
-vertscr0 fcb 1,148,158
+v0 fcb 1,148,158
 	fcb 1,176,188
 	fcb 2,50,63
 	fcb 2,68,88
@@ -84,7 +84,7 @@ vertscr0 fcb 1,148,158
 	fcb 14,140,144
 	fcb 14,148,152
 	fcb 14,154,158
-vertscr1 fcb 16,2,12
+v1 fcb 16,2,12
 	fcb 16,13,16
 	fcb 16,34,40
 	fcb 16,166,173
@@ -115,7 +115,7 @@ vertscr1 fcb 16,2,12
 	fcb 29,132,140
 	fcb 30,133,140
 	fcb 30,40,46
-vertscr2 fcb 32,2,12
+v2 fcb 32,2,12
 	fcb 32,13,16
 	fcb 32,34,40
 	fcb 32,140,144
@@ -136,7 +136,7 @@ vertscr2 fcb 32,2,12
 	fcb 41,110,124
 	fcb 45,2,16
 	fcb 45,148,158
-vertscr3 fcb 48,168,172
+v3 fcb 48,168,172
 	fcb 48,174,187
 	fcb 48,74,80
 	fcb 50,80,85
@@ -166,7 +166,7 @@ vertscr3 fcb 48,168,172
 	fcb 63,36,40
 	fcb 63,143,147
 	fcb 63,80,85
-vertscr4 fcb 64,28,31
+v4 fcb 64,28,31
 	fcb 64,33,36
 	fcb 64,28,31
 	fcb 65,28,36
@@ -196,7 +196,7 @@ vertscr4 fcb 64,28,31
 	fcb 75,104,123
 	fcb 78,2,9
 	fcb 78,55,61
-vertscr5 fcb 81,42,48
+v5 fcb 81,42,48
 	fcb 81,50,56
 	fcb 82,3,17
 	fcb 86,17,42
@@ -220,7 +220,7 @@ vertscr5 fcb 81,42,48
 	fcb 93,140,147
 	fcb 95,79,83
 	fcb 95,86,90
-vertscr6 fcb 96,42,56
+v6 fcb 96,42,56
 	fcb 96,22,26
 	fcb 96,27,32
 	fcb 97,157,165
@@ -243,7 +243,7 @@ vertscr6 fcb 96,42,56
 	fcb 109,11,24
 	fcb 109,24,35
 	fcb 109,125,140
-vertscr7 fcb 112,68,73
+v7 fcb 112,68,73
 	fcb 112,96,101
 	fcb 113,141,147
 	fcb 114,73,80
@@ -269,7 +269,7 @@ vertscr7 fcb 112,68,73
 	fcb 127,80,83
 	fcb 127,86,89
 	fcb 127,125,141
-vertscr8 fcb 128,152,158
+v8 fcb 128,152,158
 	fcb 128,174,179
 	fcb 129,125,141
 	fcb 130,67,71
@@ -300,7 +300,7 @@ vertscr8 fcb 128,152,158
 	fcb 142,102,112
 	fcb 142,141,147
 	fcb 142,152,158
-vertscr9 fcb 144,48,56
+v9 fcb 144,48,56
 	fcb 144,67,71
 	fcb 144,75,79
 	fcb 144,90,94
@@ -325,7 +325,7 @@ vertscr9 fcb 144,48,56
 	fcb 153,71,89
 	fcb 153,91,109
 	fcb 153,111,114
-vertscr10 fcb 161,158,162
+v10 fcb 161,158,162
 	fcb 162,131,142
 	fcb 162,162,175
 	fcb 163,162,174
@@ -361,7 +361,7 @@ vertscr10 fcb 161,158,162
 	fcb 175,77,88
 	fcb 175,88,103
 	fcb 175,131,142
-vertscr11 fcb 178,3,20
+v11 fcb 178,3,20
 	fcb 178,28,38
 	fcb 179,77,88
 	fcb 179,88,103
@@ -381,7 +381,7 @@ vertscr11 fcb 178,3,20
 	fcb 191,15,20
 	fcb 191,28,31
 	fcb 191,35,38
-vertscr12 fcb 192,142,153
+v12 fcb 192,142,153
 	fcb 193,77,88
 	fcb 193,88,103
 	fcb 196,153,165
@@ -406,7 +406,7 @@ vertscr12 fcb 192,142,153
 	fcb 203,180,184
 	fcb 204,142,153
 	fcb 204,35,46
-vertscr13 fcb 208,3,8
+v13 fcb 208,3,8
 	fcb 208,15,20
 	fcb 208,53,62
 	fcb 209,165,174
@@ -439,7 +439,7 @@ vertscr13 fcb 208,3,8
 	fcb 220,162,165
 	fcb 220,166,170
 	fcb 221,152,156
-vertscr14 fcb 224,28,31
+v14 fcb 224,28,31
 	fcb 224,35,38
 	fcb 224,77,80
 	fcb 224,87,93
@@ -474,9 +474,9 @@ vertscr14 fcb 224,28,31
 	fcb 237,88,104
 	fcb 237,104,115
 	fcb 239,167,174
-vertscr15	fcb 0		; mark end of vertical lines table
+v15	fcb 0		; mark end of vertical lines table
 
-horscr0	fcb 1,125,145
+h0	fcb 1,125,145
 	fcb 2,3,16
 	fcb 2,32,45
 	fcb 2,51,78
@@ -501,7 +501,7 @@ horscr0	fcb 1,125,145
 	fcb 13,163,166
 	fcb 13,168,171
 	fcb 15,191,208
-horscr1	fcb 16,3,16
+h1	fcb 16,3,16
 	fcb 16,22,26
 	fcb 16,32,45
 	fcb 17,82,86
@@ -537,7 +537,7 @@ horscr1	fcb 16,3,16
 	fcb 31,50,64
 	fcb 31,191,213
 	fcb 31,216,224
-horscr2	fcb 32,96,104
+h2	fcb 32,96,104
 	fcb 33,50,64
 	fcb 34,16,23
 	fcb 34,25,32
@@ -574,7 +574,7 @@ horscr2	fcb 32,96,104
 	fcb 46,168,192
 	fcb 46,192,202
 	fcb 46,204,227
-horscr3	fcb 48,104,109
+h3	fcb 48,104,109
 	fcb 48,125,141
 	fcb 48,165,192
 	fcb 48,192,216
@@ -604,7 +604,7 @@ horscr3	fcb 48,104,109
 	fcb 62,171,197
 	fcb 62,199,208
 	fcb 63,2,10
-horscr4	fcb 67,130,136
+h4	fcb 67,130,136
 	fcb 67,138,144
 	fcb 68,112,119
 	fcb 68,2,24
@@ -644,7 +644,7 @@ horscr4	fcb 67,130,136
 	fcb 79,138,144
 	fcb 79,87,93
 	fcb 79,95,101
-horscr5	fcb 80,224,226
+h5	fcb 80,224,226
 	fcb 80,104,114
 	fcb 80,117,127
 	fcb 80,7,23
@@ -685,7 +685,7 @@ horscr5	fcb 80,224,226
 	fcb 94,130,144
 	fcb 95,54,56
 	fcb 95,57,59
-horscr6	fcb 96,112,114
+h6	fcb 96,112,114
 	fcb 96,117,119
 	fcb 96,13,16
 	fcb 96,17,35
@@ -726,7 +726,7 @@ horscr6	fcb 96,112,114
 	fcb 111,153,169
 	fcb 111,171,197
 	fcb 111,199,214
-horscr7	fcb 112,142,151
+h7	fcb 112,142,151
 	fcb 112,7,13
 	fcb 112,65,70
 	fcb 113,216,235
@@ -755,7 +755,7 @@ horscr7	fcb 112,142,151
 	fcb 125,109,127
 	fcb 125,129,147
 	fcb 126,50,65
-horscr8	fcb 131,162,175
+h8	fcb 131,162,175
 	fcb 131,184,197
 	fcb 131,199,212
 	fcb 132,93,103
@@ -781,7 +781,7 @@ horscr8	fcb 131,162,175
 	fcb 143,225,231
 	fcb 143,56,63
 	fcb 143,65,72
-horscr9	fcb 144,14,22
+h9	fcb 144,14,22
 	fcb 144,24,32
 	fcb 147,56,63
 	fcb 147,65,72
@@ -816,7 +816,7 @@ horscr9	fcb 144,14,22
 	fcb 158,38,45
 	fcb 158,161,167
 	fcb 158,170,184
-horscr10 fcb 162,161,162
+h10 fcb 162,161,162
 	fcb 162,163,184
 	fcb 162,216,220
 	fcb 164,56,72
@@ -860,7 +860,7 @@ horscr10 fcb 162,161,162
 	fcb 175,162,165
 	fcb 175,187,209
 	fcb 175,216,229
-horscr11 fcb 176,97,120
+h11 fcb 176,97,120
 	fcb 176,1,4
 	fcb 176,5,11
 	fcb 176,217,229
@@ -886,9 +886,9 @@ horscr11 fcb 176,97,120
 	fcb 189,199,217
 	fcb 189,87,112
 	fcb 189,112,132
-horscr12
-horscr13
-horscr14
-horscr15
+h12
+h13
+h14
+h15
 ***
 	fcb 0		; mark end of horizontal lines table
