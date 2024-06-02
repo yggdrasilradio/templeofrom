@@ -3,7 +3,7 @@
 from PIL import Image
 
 def coord(value):
-	return '$' + format(value / 4, '02x')
+	return '$' + format(int(value / 4), '02x')
 
 def objectid(x, y):
 	global pix, GREEN
