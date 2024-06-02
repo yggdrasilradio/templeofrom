@@ -36,7 +36,7 @@ def lineout(v1, c, v2):
 			r = r + ' fcb ' + str(c) + ',' + str(v1 + 2 * delta) + ',' + str(v2) + '\n'
 		else:
 			r = r + '*ERROR\n'
-			print "SEGMENTING ERROR"
+			print('SEGMENTING ERROR')
 
 img = Image.open('map.gif')
 pix = img.load()
@@ -75,13 +75,13 @@ for x in range(4, width - 1):
 			if x % 4 != 0:
 				i += 1
 if i != 0:
-	print "There are " + str(i) + " misaligned sprites"
+	print('There are ' + str(i) + ' misaligned sprites')
 
 if BLACK == WHITE:
-	print "Color mapping layer is missing"
+	print('Color mapping layer is missing')
 
 # Generate lines.asm
-print 'Generating lines.asm'
+print('Generating lines.asm')
 maxx = 0
 minx = 9000
 maxy = 0
@@ -143,7 +143,7 @@ with open('lines.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate treasures.asm
-print 'Generating treasures.asm'
+print('Generating treasures.asm')
 cross = ''
 ring = ''
 crown = ''
@@ -194,7 +194,7 @@ with open('treasures.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate monsters.asm
-print 'Generating monsters.asm'
+print('Generating monsters.asm')
 r = ''
 nmonsters = 0
 for x in range(4, width - 1, 4):
@@ -236,7 +236,7 @@ with open('monsters.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate portals.asm
-print 'Generating portals.asm'
+print('Generating portals.asm')
 r = ''
 nportals = 0
 xvalues = []
@@ -272,7 +272,7 @@ with open('portals.asm', 'w') as file:
 	file.write("".join(data))
 
 # Generate constants.asm
-print 'Generating constants.asm'
+print('Generating constants.asm')
 r = ''
 for x in range(4, width - 1):
 	for y in range(4, height - 1):
